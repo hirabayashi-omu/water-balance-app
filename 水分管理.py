@@ -221,6 +221,15 @@ st.markdown("---")
 if st.session_state.page == "main":
     st.title("🏥 水分出納バランス記録")
 
+    # ---- session_state 初期化 ----
+    if "u_times" not in st.session_state:
+        st.session_state.u_times = 5
+    if "u_vol" not in st.session_state:
+        st.session_state.u_vol = 250
+    if "show_urine_dialog" not in st.session_state:
+        st.session_state.show_urine_dialog = False
+
+    # ---- 基本情報 ----
     c1, c2, c3, c4, c5 = st.columns(5)
     age = c1.number_input("年齢", 0, 120, 20)
     weight = c2.number_input("体重(kg)", 1.0, 200.0, 60.0, 0.1)
@@ -228,7 +237,9 @@ if st.session_state.page == "main":
     r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5)
     recorder = c5.text_input("記録責任者")
 
+    # ---- IN / OUT ----
     col_in, col_out = st.columns(2)
+
     with col_in:
         oral = st.number_input("経口摂取(mL)", 0, 10000, 1500, 50)
         iv = st.number_input("静脈輸液(mL)", 0, 10000, 0, 50)
@@ -236,20 +247,39 @@ if st.session_state.page == "main":
         metabolic = 5 * weight
 
     with col_out:
-        u_times = st.number_input("排尿回数", 0, 20, 5)
-        u_vol = st.number_input("1回尿量(mL)", 0, 1000, 250)
+        u_times = st.number_input(
+            "排尿回数",
+            0,
+            20,
+            st.session_state.u_times
+        )
+
+        u_vol = st.number_input(
+            "1回尿量(mL)",
+            0,
+            1000,
+            st.session_state.u_vol
+        )
+
         urine = u_times * u_vol
+
+        # ★ 追加：尿量推算ボタン（配置のみ追加）
+        if st.button("📐 標準尿量から推算"):
+            st.session_state.show_urine_dialog = True
+
         bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
         s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
         s_vol = st.number_input("便重量(g)", 0, 1000, 150)
-        stool = s_vol * (0.75 if s_type=="普通" else 0.85 if s_type=="軟便" else 0.95)
+        stool = s_vol * (0.75 if s_type == "普通" else 0.85 if s_type == "軟便" else 0.95)
 
+    # ---- 不感蒸泄 ----
     insensible = 15 * weight
     if temp > 37:
-        insensible *= (1 + 0.15*(temp-37))
+        insensible *= (1 + 0.15 * (temp - 37))
     if r_temp > 30:
-        insensible *= (1 + 0.175*(r_temp-30))
+        insensible *= (1 + 0.175 * (r_temp - 30))
 
+    # ---- 集計 ----
     total_in = oral + iv + blood + metabolic
     total_out = urine + bleeding + stool + insensible
     net = total_in - total_out
@@ -259,6 +289,7 @@ if st.session_state.page == "main":
     m2.metric("総OUT", f"{total_out:.0f} mL")
     m3.metric("バランス", f"{net:+.0f} mL")
 
+    # ---- 判定 ----
     if net > 500:
         judg = "体液過剰の傾向"
         st.error(judg)
@@ -269,6 +300,7 @@ if st.session_state.page == "main":
         judg = "維持範囲"
         st.success(judg)
 
+    # ---- PDF ----
     if st.button("📝 PDF生成"):
         report_data = {
             "age": age,
@@ -287,9 +319,53 @@ if st.session_state.page == "main":
             "judgment": judg,
             "recorder": recorder
         }
-    
+
         pdf = generate_medical_report(report_data)
         st.download_button("📥 ダウンロード", pdf, "fluid_balance.pdf")
+
+    # ================================
+    # 尿量推算ダイアログ
+    # ================================
+    if st.session_state.show_urine_dialog:
+
+        @st.dialog("🚻 標準尿量の推算（体重補正）")
+        def urine_dialog():
+            st.markdown("**体重と基準値から24時間尿量を推算します**")
+
+            std_type = st.selectbox(
+                "評価基準を選択",
+                [
+                    "正常（20 mL/kg/day）",
+                    "少尿境界（10 mL/kg/day）",
+                    "多尿境界（40 mL/kg/day）"
+                ]
+            )
+
+            coef = 20 if "20" in std_type else 10 if "10" in std_type else 40
+            std_urine = coef * weight
+            est_u_vol = std_urine / max(u_times, 1)
+
+            st.info(
+                f"""
+                推算24時間尿量：{std_urine:.0f} mL/day  
+                排尿回数 {u_times} 回 →  
+                **1回尿量 約 {est_u_vol:.0f} mL**
+                """
+            )
+
+            c_ok, c_ng = st.columns(2)
+
+            if c_ok.button("✅ 入力に反映"):
+                st.session_state.u_vol = int(est_u_vol)
+                st.session_state.u_times = u_times
+                st.session_state.show_urine_dialog = False
+                st.rerun()
+
+            if c_ng.button("❌ キャンセル"):
+                st.session_state.show_urine_dialog = False
+                st.rerun()
+
+        urine_dialog()
 
 # ================================
 # 推算根拠ページ
@@ -442,6 +518,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
