@@ -455,23 +455,7 @@ if st.session_state.page == "main":
     total_out = urine_total + bleeding + stool_total + insensible_total
     net_balance = total_in - total_out
 
-    # 2. 結果表示（メトリクス）を1回だけ実行
-    st.divider()
-    m1, m2, m3 = st.columns(3)
-    m1.metric("総流入 (IN)", f"{total_in:.0f} mL")
-    m2.metric("総流出 (OUT)", f"{total_out:.0f} mL")
-    m3.metric("バランス", f"{net_balance:+.0f} mL")
 
-    # 3. 判定メッセージの表示（st.error 等を一回だけ実行）
-    if net_balance > 500:
-        judg = "体液過剰の傾向"
-        st.error(f"判定：{judg}")
-    elif net_balance < -200:
-        judg = "脱水リスク"
-        st.warning(f"判定：{judg}")
-    else:
-        judg = "維持範囲"
-        st.success(f"判定：{judg}")
 
 
 
@@ -795,6 +779,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
