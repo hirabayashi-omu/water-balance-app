@@ -471,35 +471,35 @@ if st.session_state.page == "main":
 # ================================
 # ダークモード対応CSS
 # ================================
-st.markdown("""
-<style>
-/* 共通 */
-.report-header-box {
-    padding: 0.5em 1em;
-    border-left: 6px solid;
-    margin: 1.5em 0 0.5em 0;
-    border-radius: 4px;
-}
-
-/* ライトモード */
-@media (prefers-color-scheme: light) {
+    st.markdown("""
+    <style>
+    /* 共通 */
     .report-header-box {
-        background-color: #f2f2f2;
-        border-color: #2c7be5;
-        color: #000000;
+        padding: 0.5em 1em;
+        border-left: 6px solid;
+        margin: 1.5em 0 0.5em 0;
+        border-radius: 4px;
     }
-}
-
-/* ダークモード */
-@media (prefers-color-scheme: dark) {
-    .report-header-box {
-        background-color: #2b2b2b;
-        border-color: #6ea8fe;
-        color: #ffffff;
+    
+    /* ライトモード */
+    @media (prefers-color-scheme: light) {
+        .report-header-box {
+            background-color: #f2f2f2;
+            border-color: #2c7be5;
+            color: #000000;
+        }
     }
-}
-</style>
-""", unsafe_allow_html=True)
+    
+    /* ダークモード */
+    @media (prefers-color-scheme: dark) {
+        .report-header-box {
+            background-color: #2b2b2b;
+            border-color: #6ea8fe;
+            color: #ffffff;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # ================================
 # 推算根拠ページ
@@ -657,3 +657,4 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
