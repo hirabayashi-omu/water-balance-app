@@ -68,13 +68,21 @@ if "show_stool_dialog" not in st.session_state:
 if "weight" not in st.session_state:
     st.session_state.weight = 60.0
 
+weight = st.number_input(
+    "体重(kg)",
+    1.0,
+    200.0,
+    step=0.1,
+    key="weight"
+)
+
 # ================================
 # 尿量推算ダイアログ（定義だけ）
 # ================================
 @st.dialog("🚻 標準尿量の推算（体重補正）")
 def urine_dialog():
-    # ← このインデントで揃える（関数内）
-    weight = st.session_state.weight
+    # session_state から安全に取得
+    weight = st.session_state.get("weight", 60.0)
 
     std_type = st.selectbox(
         "評価基準を選択",
@@ -97,39 +105,6 @@ def urine_dialog():
         st.rerun()
 
         
-def urine_dialog():
-    st.markdown("**体重と基準値から24時間尿量を推算します**")
-
-    std_type = st.selectbox(
-        "評価基準を選択",
-        [
-            "正常（20 mL/kg/day）",
-            "少尿境界（10 mL/kg/day）",
-            "多尿境界（40 mL/kg/day）"
-        ]
-    )
-
-    coef = 20 if "20" in std_type else 10 if "10" in std_type else 40
-    std_urine = coef * weight
-    est_u_vol = std_urine / max(st.session_state.u_times, 1)
-
-    st.info(
-        f"""
-        推算24時間尿量：{std_urine:.0f} mL/day  
-        排尿回数：{st.session_state.u_times} 回  
-        ▶ **1回尿量：約 {est_u_vol:.0f} mL**
-        """
-    )
-
-    c_ok, c_ng = st.columns(2)
-    if c_ok.button("✅ 入力に反映"):
-        st.session_state.u_vol = int(est_u_vol)
-        st.session_state.show_urine_dialog = False
-        st.rerun()
-
-    if c_ng.button("❌ キャンセル"):
-        st.session_state.show_urine_dialog = False
-        st.rerun()
 
 
 # ================================
@@ -137,6 +112,7 @@ def urine_dialog():
 # ================================
 @st.dialog("標準的な便量の推算（体重・状態別）")
 def stool_dialog():
+    weight = st.session_state.get("weight", 60.0)
     condition = st.selectbox(
         "状態・疾患区分",
         [
@@ -772,6 +748,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
