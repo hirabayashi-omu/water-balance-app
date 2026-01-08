@@ -400,3 +400,22 @@ if generate_pdf:
             "PDF 生成中にエラーが発生しました。サーバ側に `pdfkit` と `wkhtmltopdf` がインストールされているか確認してください。"
         )
         st.code(str(e))
+
+if st.button("PDF レポートを生成"):
+    pdf_buffer = generate_pdf_report(
+        age, weight, temp, room_temp,
+        body_water_percent, body_total_water,
+        oral, iv, blood_transfusion, total_in,
+        urine, bleeding, stool_loss, total_out,
+        insensible, metabolic_water,
+        net_balance, judgment,
+        recorder
+    )
+
+    st.download_button(
+        label="PDF をダウンロード",
+        data=pdf_buffer,
+        file_name="water_balance_report.pdf",
+        mime="application/pdf"
+    )
+
