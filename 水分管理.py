@@ -428,6 +428,8 @@ if st.session_state.page == "main":
             st.markdown("###### ")
             if st.button("📐 標準尿量から推算", use_container_width=True):
                 st.session_state.show_urine_dialog = True
+                st.experimental_rerun()  # ← 即座に rerun してダイアログ表示
+
 
         bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
 
@@ -446,6 +448,7 @@ if st.session_state.page == "main":
             st.markdown("###### ")
             if st.button("📐 標準便量から推算", use_container_width=True):
                 st.session_state.show_stool_dialog = True
+                st.experimental_rerun()  # ← 即座に rerun してダイアログ表示
 
         s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
 
@@ -751,6 +754,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
