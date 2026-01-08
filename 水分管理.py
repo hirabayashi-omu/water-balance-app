@@ -264,9 +264,9 @@ if st.session_state.page == "main":
     col_in, col_out = st.columns(2)
 
     with col_in:
-        oral = st.number_input("経口摂取(mL)", 0, 10000, 1500, 50)
+        oral = st.number_input("経口摂取(mL) ※酒類・カフェイン飲料を除く", 0, 10000, 1500, 50)
         iv = st.number_input("静脈輸液(mL) ※医療機関で実施", 0, 10000, 0, 50)
-        blood = st.number_input("輸血(mL)　※医療機関で実施", 0, 5000, 0, 50)
+        blood = st.number_input("輸血(mL) ※医療機関で実施", 0, 5000, 0, 50)
         metabolic = 5 * weight
 
     with col_out:
@@ -613,6 +613,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
