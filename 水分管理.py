@@ -68,6 +68,9 @@ if "show_stool_dialog" not in st.session_state:
 if "weight" not in st.session_state:
     st.session_state.weight = 60.0
 
+if "recorder" not in st.session_state:
+    st.session_state.recorder = "本人"
+
 # ================================
 # 尿量推算ダイアログ（定義だけ）
 # ================================
@@ -507,7 +510,7 @@ if st.session_state.page == "main":
         pdf = generate_medical_report(report_data)
         st.download_button("📥 ダウンロード", pdf, "fluid_balance.pdf")
 
-        stool_dialog() 
+
 
 # ================================
 # ダークモード対応CSS
@@ -748,6 +751,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
