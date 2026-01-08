@@ -108,7 +108,7 @@ c1, c2, c3, c4 = st.columns([1,1,1,2])
 with c1: age = st.number_input("年齢", 0, 120, 20)
 with c2: weight = st.number_input("体重(kg)", 1.0, 200.0, 60.0, 0.1)
 with c3: temp = st.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1)
-with c4: recorder = st.text_input("記録責任者", "")
+with c4: recorder = st.text_input("記録者", "")
 
 r_temp = 24.0 # 室温は固定または非表示に近くても計算は維持
 
@@ -173,3 +173,4 @@ if st.button("📝 医療レポート(PDF)を生成"):
         file_name=f"Report_{get_jst_now().strftime('%Y%m%d')}.pdf",
         mime="application/pdf"
     )
+
