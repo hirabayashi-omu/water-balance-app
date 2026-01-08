@@ -48,30 +48,6 @@ st.markdown("""
 
 
 # ================================
-# session_state 初期化（必須）
-# ================================
-if "u_times" not in st.session_state:
-    st.session_state.u_times = 5
-
-if "u_vol" not in st.session_state:
-    st.session_state.u_vol = 250
-
-if "s_vol" not in st.session_state:
-    st.session_state.s_vol = 150
-
-if "show_urine_dialog" not in st.session_state:
-    st.session_state.show_urine_dialog = False
-
-if "show_stool_dialog" not in st.session_state:
-    st.session_state.show_stool_dialog = False
-
-if "weight" not in st.session_state:
-    st.session_state.weight = 60.0
-
-if "recorder" not in st.session_state:
-    st.session_state.recorder = "本人"
-
-# ================================
 # 尿量推算ダイアログ（定義だけ）
 # ================================
 @st.dialog("🚽 標準便量の推算（体重・状態別）")
@@ -141,7 +117,29 @@ def stool_dialog():
     if c_ng.button("❌ キャンセル"):
         st.session_state.show_stool_dialog = False
 
+# ================================
+# session_state 初期化（必須）
+# ================================
+if "u_times" not in st.session_state:
+    st.session_state.u_times = 5
 
+if "u_vol" not in st.session_state:
+    st.session_state.u_vol = 250
+
+if "s_vol" not in st.session_state:
+    st.session_state.s_vol = 150
+
+if "show_urine_dialog" not in st.session_state:
+    st.session_state.show_urine_dialog = False
+
+if "show_stool_dialog" not in st.session_state:
+    st.session_state.show_stool_dialog = False
+
+if "weight" not in st.session_state:
+    st.session_state.weight = 60.0
+
+if "recorder" not in st.session_state:
+    st.session_state.recorder = "本人"
 
 st.markdown("""
 <style>
@@ -746,6 +744,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
