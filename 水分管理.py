@@ -245,8 +245,12 @@ if st.session_state.page == "main":
         st.session_state.u_times = 5
     if "u_vol" not in st.session_state:
         st.session_state.u_vol = 250
+    if "s_vol" not in st.session_state:
+        st.session_state.s_vol = 150
     if "show_urine_dialog" not in st.session_state:
         st.session_state.show_urine_dialog = False
+    if "show_stool_dialog" not in st.session_state:
+        st.session_state.show_stool_dialog = False
 
     # ---- 基本情報 ----
     c1, c2, c3, c4, c5 = st.columns(5)
@@ -266,42 +270,58 @@ if st.session_state.page == "main":
         metabolic = 5 * weight
 
     with col_out:
-        u_times = st.number_input(
+        # 排尿回数
+        st.session_state.u_times = st.number_input(
             "排尿回数",
             0,
             20,
             st.session_state.u_times
         )
-    
-        # ★ 横並び：1回尿量（左）／推算ボタン（右）
+
+        # 1回尿量（左）＋ 推算ボタン（右）
         ucol_l, ucol_r = st.columns([3, 2])
 
-        # ============================
-        # 便量（実測＋推算）
-        # ============================
+        with ucol_l:
+            st.session_state.u_vol = st.number_input(
+                "1回尿量(mL)",
+                0,
+                1000,
+                st.session_state.u_vol
+            )
+
+        with ucol_r:
+            st.markdown("###### ")
+            if st.button("📐 標準尿量から推算", use_container_width=True):
+                st.session_state.show_urine_dialog = True
+
+        bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
+
+        # ---- 便量（実測＋推算） ----
         scol_l, scol_r = st.columns([3, 2])
-    
+
         with scol_l:
-            s_vol = st.number_input(
+            st.session_state.s_vol = st.number_input(
                 "便重量(g)",
                 0,
                 1000,
                 st.session_state.s_vol
             )
-    
+
         with scol_r:
-            st.markdown("###### ")  # 高さ合わせ
+            st.markdown("###### ")
             if st.button("📐 標準便量から推算", use_container_width=True):
                 st.session_state.show_stool_dialog = True
-    
-        s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
-    
-        stool = s_vol * (
-            0.75 if s_type == "普通"
-            else 0.85 if s_type == "軟便"
-            else 0.95
-        )
 
+        s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
+
+    # ---- 尿量・便量の確定計算（必ず定義） ----
+    urine = st.session_state.u_times * st.session_state.u_vol
+
+    stool = st.session_state.s_vol * (
+        0.75 if s_type == "普通"
+        else 0.85 if s_type == "軟便"
+        else 0.95
+    )
 
     # ---- 不感蒸泄 ----
     insensible = 15 * weight
@@ -358,13 +378,9 @@ if st.session_state.page == "main":
     # 尿量推算ダイアログ
     # ================================
     if st.session_state.show_urine_dialog:
-
-        @st.dialog("🚻 標準尿量の推算（体重補正）")
-        def urine_dialog():
-            st.markdown("**体重と基準値から24時間尿量を推算します**")
-
+        with st.dialog("🚻 標準尿量の推算（体重補正）"):
             std_type = st.selectbox(
-                "評価基準を選択",
+                "評価基準",
                 [
                     "正常（20 mL/kg/day）",
                     "少尿境界（10 mL/kg/day）",
@@ -374,38 +390,27 @@ if st.session_state.page == "main":
 
             coef = 20 if "20" in std_type else 10 if "10" in std_type else 40
             std_urine = coef * weight
-            est_u_vol = std_urine / max(u_times, 1)
+            est_u_vol = std_urine / max(st.session_state.u_times, 1)
 
             st.info(
-                f"""
-                推算24時間尿量：{std_urine:.0f} mL/day  
-                排尿回数 {u_times} 回 →  
-                **1回尿量 約 {est_u_vol:.0f} mL**
-                """
+                f"推算24時間尿量：{std_urine:.0f} mL/day\n\n"
+                f"→ 1回尿量：約 {est_u_vol:.0f} mL"
             )
 
             c_ok, c_ng = st.columns(2)
-
-            if c_ok.button("✅ 入力に反映"):
+            if c_ok.button("入力に反映"):
                 st.session_state.u_vol = int(est_u_vol)
-                st.session_state.u_times = u_times
+                st.session_state.show_urine_dialog = False
+                st.rerun()
+            if c_ng.button("キャンセル"):
                 st.session_state.show_urine_dialog = False
                 st.rerun()
 
-            if c_ng.button("❌ キャンセル"):
-                st.session_state.show_urine_dialog = False
-                st.rerun()
-
-        urine_dialog()
-
     # ================================
-    # 便量推算ダイアログ（疾患補正対応）
+    # 便量推算ダイアログ（疾患補正）
     # ================================
-    if st.session_state.get("show_stool_dialog", False):
+    if st.session_state.show_stool_dialog:
         with st.dialog("標準的な便量の推算（体重・状態別）"):
-            st.write("体重と排便状態から、1日あたりの便重量を推算します。")
-            st.caption("※学校・生活・一般医療向けの代表的な推算値です。")
-    
             condition = st.selectbox(
                 "状態・疾患区分",
                 [
@@ -417,8 +422,7 @@ if st.session_state.page == "main":
                     "便秘傾向"
                 ]
             )
-    
-            # 補正係数
+
             factor_table = {
                 "標準（健康時）": 1.0,
                 "軟便": 1.5,
@@ -427,35 +431,21 @@ if st.session_state.page == "main":
                 "経腸栄養中": 1.8,
                 "便秘傾向": 0.6
             }
-    
+
             factor = factor_table[condition]
-    
-            base_stool = 2.0 * weight  # g/day
-            est_stool = base_stool * factor
-    
-            st.metric(
-                "推算便重量（1日）",
-                f"{est_stool:.0f} g",
-                help=f"基準値：2.0 g/kg/day × 補正係数 {factor}"
-            )
-    
-            st.info(
-                f"計算式：2.0 × 体重(kg) × {factor}\n\n"
-                "※下痢時は水分喪失が急増するため、"
-                "水分出納の評価には注意が必要です。"
-            )
-    
-            col_ok, col_cancel = st.columns(2)
-            with col_ok:
-                if st.button("入力に反映"):
-                    st.session_state.s_vol = int(est_stool)
-                    st.session_state.show_stool_dialog = False
-                    st.rerun()
-    
-            with col_cancel:
-                if st.button("キャンセル"):
-                    st.session_state.show_stool_dialog = False
-                    st.rerun()
+            est_stool = 2.0 * weight * factor
+
+            st.metric("推算便重量（1日）", f"{est_stool:.0f} g")
+
+            col_ok, col_ng = st.columns(2)
+            if col_ok.button("入力に反映"):
+                st.session_state.s_vol = int(est_stool)
+                st.session_state.show_stool_dialog = False
+                st.rerun()
+            if col_ng.button("キャンセル"):
+                st.session_state.show_stool_dialog = False
+                st.rerun()
+
 
 
 
@@ -610,6 +600,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
