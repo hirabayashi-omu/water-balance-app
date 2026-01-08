@@ -257,25 +257,31 @@ if st.session_state.page == "main":
         # ★ 横並び：1回尿量（左）／推算ボタン（右）
         ucol_l, ucol_r = st.columns([3, 2])
     
-        with ucol_l:
-            u_vol = st.number_input(
-                "1回尿量(mL)",
+　     # ============================
+        # 便量（実測＋推算）
+        # ============================
+        scol_l, scol_r = st.columns([3, 2])
+    
+        with scol_l:
+            s_vol = st.number_input(
+                "便重量(g)",
                 0,
                 1000,
-                st.session_state.u_vol
+                st.session_state.s_vol
             )
     
-        with ucol_r:
-            st.markdown("###### ")  # 高さ合わせ（レイアウト安定用）
-            if st.button("📐 標準尿量から推算", use_container_width=True):
-                st.session_state.show_urine_dialog = True
+        with scol_r:
+            st.markdown("###### ")  # 高さ合わせ
+            if st.button("📐 標準便量から推算", use_container_width=True):
+                st.session_state.show_stool_dialog = True
     
-        urine = u_times * u_vol
-    
-        bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
         s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
-        s_vol = st.number_input("便重量(g)", 0, 1000, 150)
-        stool = s_vol * (0.75 if s_type == "普通" else 0.85 if s_type == "軟便" else 0.95)
+    
+        stool = s_vol * (
+            0.75 if s_type == "普通"
+            else 0.85 if s_type == "軟便"
+            else 0.95
+        )
 
 
     # ---- 不感蒸泄 ----
@@ -372,6 +378,67 @@ if st.session_state.page == "main":
                 st.rerun()
 
         urine_dialog()
+
+    # ================================
+    # 便量推算ダイアログ（疾患補正対応）
+    # ================================
+    if st.session_state.get("show_stool_dialog", False):
+        with st.dialog("標準的な便量の推算（体重・状態別）"):
+            st.write("体重と排便状態から、1日あたりの便重量を推算します。")
+            st.caption("※学校・生活・一般医療向けの代表的な推算値です。")
+    
+            condition = st.selectbox(
+                "状態・疾患区分",
+                [
+                    "標準（健康時）",
+                    "軟便",
+                    "下痢",
+                    "発熱・感染症",
+                    "経腸栄養中",
+                    "便秘傾向"
+                ]
+            )
+    
+            # 補正係数
+            factor_table = {
+                "標準（健康時）": 1.0,
+                "軟便": 1.5,
+                "下痢": 3.0,
+                "発熱・感染症": 1.3,
+                "経腸栄養中": 1.8,
+                "便秘傾向": 0.6
+            }
+    
+            factor = factor_table[condition]
+    
+            base_stool = 2.0 * weight  # g/day
+            est_stool = base_stool * factor
+    
+            st.metric(
+                "推算便重量（1日）",
+                f"{est_stool:.0f} g",
+                help=f"基準値：2.0 g/kg/day × 補正係数 {factor}"
+            )
+    
+            st.info(
+                f"計算式：2.0 × 体重(kg) × {factor}\n\n"
+                "※下痢時は水分喪失が急増するため、"
+                "水分出納の評価には注意が必要です。"
+            )
+    
+            col_ok, col_cancel = st.columns(2)
+            with col_ok:
+                if st.button("入力に反映"):
+                    st.session_state.s_vol = int(est_stool)
+                    st.session_state.show_stool_dialog = False
+                    st.rerun()
+    
+            with col_cancel:
+                if st.button("キャンセル"):
+                    st.session_state.show_stool_dialog = False
+                    st.rerun()
+
+
 
 # ================================
 # 推算根拠ページ
@@ -524,6 +591,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
