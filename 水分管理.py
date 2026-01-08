@@ -468,6 +468,38 @@ if st.session_state.page == "main":
 
         stool_dialog() 
 
+# ================================
+# ダークモード対応CSS
+# ================================
+st.markdown("""
+<style>
+/* 共通 */
+.report-header-box {
+    padding: 0.5em 1em;
+    border-left: 6px solid;
+    margin: 1.5em 0 0.5em 0;
+    border-radius: 4px;
+}
+
+/* ライトモード */
+@media (prefers-color-scheme: light) {
+    .report-header-box {
+        background-color: #f2f2f2;
+        border-color: #2c7be5;
+        color: #000000;
+    }
+}
+
+/* ダークモード */
+@media (prefers-color-scheme: dark) {
+    .report-header-box {
+        background-color: #2b2b2b;
+        border-color: #6ea8fe;
+        color: #ffffff;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ================================
 # 推算根拠ページ
@@ -475,10 +507,17 @@ if st.session_state.page == "main":
 elif st.session_state.page == "theory":
     st.title("📖 水分出納の推算根拠と判定基準")
     
-    st.info("本プログラムで使用している各種推算式は以下の通りです。これらは臨床現場で一般的に用いられる指標に基づいています。")
+    st.info(
+        "本プログラムで使用している各種推算式は以下の通りです。"
+        "これらは臨床現場で一般的に用いられる指標に基づいています。"
+    )
 
     # 1. 入出量合計の算出式
-    st.markdown('<div class="report-header-box"><h4>1. 入出量合計の算出式</h4></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="report-header-box"><h4>1. 入出量合計の算出式</h4></div>',
+        unsafe_allow_html=True
+    )
+
     st.write("**■ 総 Intake (総流入量)**")
     st.latex(r"\text{総IN} = \text{経口摂取(経管)} + \text{静脈輸液} + \text{輸血製剤} + \text{代謝水}")
     
@@ -489,15 +528,23 @@ elif st.session_state.page == "theory":
     st.latex(r"\text{バランス} = \text{総IN} - \text{総OUT}")
 
     # 2. 各項目の推算根拠
-    st.markdown('<div class="report-header-box"><h4>2. 各項目の推算根拠</h4></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="report-header-box"><h4>2. 各項目の推算根拠</h4></div>',
+        unsafe_allow_html=True
+    )
     
     st.markdown("##### ① 代謝水 (Metabolic Water)")
     st.write("栄養素が体内で燃焼（酸化）される際に生成される水分です。")
     st.latex(r"\text{算出式: } 5\,\text{mL} \times \text{体重(kg)}")
-    st.caption("根拠: 通常、成人では1日あたり約200〜300mL（約5mL/kg）程度とされています。")
+    st.caption(
+        "根拠: 通常、成人では1日あたり約200〜300mL（約5mL/kg）程度とされています。"
+    )
 
     st.markdown("##### ② 不感蒸泄 (Insensible Water Loss)")
-    st.write("呼気や皮膚から自覚なしに失われる水分です。体温や周囲の温度によって変動します。")
+    st.write(
+        "呼気や皮膚から自覚なしに失われる水分です。"
+        "体温や周囲の温度によって変動します。"
+    )
     st.latex(r"\text{基本式: } 15\,\text{mL} \times \text{体重(kg)}")
     
     st.write("**・発熱補正:** 体温が37℃を超える場合、1℃上昇につき15%増加させます。")
@@ -508,9 +555,9 @@ elif st.session_state.page == "theory":
 
     st.markdown("##### ③ 便中水分")
     st.write("便の性状（水分含有率）に基づき、重量から水分量を推定します。")
-    st.write("- **普通便:** $重量(g) \times 0.75$")
-    st.write("- **軟便:** $重量(g) \times 0.85$")
-    st.write("- **下痢:** $重量(g) \times 0.95$")
+    st.write("- **普通便:** $重量(g) \\times 0.75$")
+    st.write("- **軟便:** $重量(g) \\times 0.85$")
+    st.write("- **下痢:** $重量(g) \\times 0.95$")
 
     st.markdown("##### ④ 推定体水分率 (Total Body Water %)")
     st.write("加齢に伴う細胞内液の減少を考慮した推算式です。")
@@ -519,21 +566,40 @@ elif st.session_state.page == "theory":
     st.write("- **成人(14-65歳):** 60%から年齢に応じて減少")
     st.write("- **高齢者(65歳以上):** 一律 50%")
 
-    # 3. 2026年現在の臨床的判定基準
-    st.markdown('<div class="report-header-box"><h4>3. 2026年現在の臨床的判定基準</h4></div>', unsafe_allow_html=True)
-    st.write("本システムでは、24時間あたりのネットバランスに基づき以下の判定を行っています。")
+    # 3. 判定基準
+    st.markdown(
+        '<div class="report-header-box"><h4>3. 2026年現在の臨床的判定基準</h4></div>',
+        unsafe_allow_html=True
+    )
+
+    st.write(
+        "本システムでは、24時間あたりのネットバランスに基づき以下の判定を行っています。"
+    )
     
     st.table([
-        {"バランス結果": "+500 mL 超", "判定": "体液過剰 (Overhydration)", "臨床的リスク": "心不全増悪、浮腫、肺水腫のリスク"},
-        {"バランス結果": "-200 ～ +500 mL", "判定": "維持範囲 (Maintenance)", "臨床的リスク": "生理的許容範囲"},
-        {"バランス結果": "-200 mL 未満", "判定": "脱水リスク (Dehydration)", "臨床的リスク": "腎不全（乏尿）、循環不全、血圧低下のリスク"}
+        {
+            "バランス結果": "+500 mL 超",
+            "判定": "体液過剰 (Overhydration)",
+            "臨床的リスク": "心不全増悪、浮腫、肺水腫のリスク"
+        },
+        {
+            "バランス結果": "-200 ～ +500 mL",
+            "判定": "維持範囲 (Maintenance)",
+            "臨床的リスク": "生理的許容範囲"
+        },
+        {
+            "バランス結果": "-200 mL 未満",
+            "判定": "脱水リスク (Dehydration)",
+            "臨床的リスク": "腎不全（乏尿）、循環不全、血圧低下のリスク"
+        }
     ])
 
     st.warning("""
-    **※これらの数値はあくまで目安です。**  
-    2026年1月9日現在の臨床ガイドラインに則り、実際の診断には血清ナトリウム値、心エコー、皮膚緊張度（ツルゴール）等の身体所見を併せて評価する必要があります。
-    """)
-
+**※これらの数値はあくまで目安です。**  
+2026年1月9日現在の臨床ガイドラインに則り、実際の診断には
+血清ナトリウム値、心エコー、皮膚緊張度（ツルゴール）等の
+身体所見を併せて評価する必要があります。
+""")
 
 
 
@@ -542,107 +608,52 @@ elif st.session_state.page == "theory":
 # ================================
 elif st.session_state.page == "refs":
     st.title("📚 引用・参考文献")
-    st.info("本システムの計算式および判定基準は、以下の公的機関・学会等の資料に基づき作成されています。")
+    
+    st.info(
+        "本システムの計算式および判定基準は、以下の公的機関・学会等の資料に基づき作成されています。"
+    )
 
-    st.markdown('<div class="report-header-box"><h4>1. 公的ガイドライン・基準</h4></div>', unsafe_allow_html=True)
+    # 1. 公的ガイドライン・基準
+    st.markdown(
+        '<div class="report-header-box"><h4>1. 公的ガイドライン・基準</h4></div>',
+        unsafe_allow_html=True
+    )
     
     st.markdown("""
-    - **[厚生労働省：日本人の食事摂取基準（2025年版）](www.mhlw.go.jp)**  
-      *水分の必要量や代謝水の生成根拠となる栄養素の酸化プロセスに関する標準的な数値が記載されています。*
-    
-    - **[環境省：熱中症環境保健マニュアル](www.wbgt.env.go.jp)**  
-      *室温・外気温上昇に伴う不感蒸泄および発汗量の増加に関する知見がまとめられています。*
+- **[厚生労働省：日本人の食事摂取基準（2025年版）](https://www.mhlw.go.jp)**  
+  *水分の必要量や代謝水の生成根拠となる栄養素の酸化プロセスに関する標準的な数値が記載されています。*
+
+- **[環境省：熱中症環境保健マニュアル](https://www.wbgt.env.go.jp)**  
+  *室温・外気温上昇に伴う不感蒸泄および発汗量の増加に関する知見がまとめられています。*
     """)
 
-    st.markdown('<div class="report-header-box"><h4>2. 臨床医学的エビデンス</h4></div>', unsafe_allow_html=True)
+    # 2. 臨床医学的エビデンス
+    st.markdown(
+        '<div class="report-header-box"><h4>2. 臨床医学的エビデンス</h4></div>',
+        unsafe_allow_html=True
+    )
     
     st.markdown("""
-    - **[MSDマニュアル プロフェッショナル版：水分平衡](www.msdmanuals.com)**  
-      *世界共通の臨床基準として、不感蒸泄（10〜15mL/kg）や、体温上昇に伴う損失増（1℃につき10〜15%）の根拠となります。*
-    
-    - **[一般社団法人 日本臨床栄養代謝学会（JSPEN）：ガイドライン](www.jspen.or.jp)**  
-      *臨床現場における水・電解質管理の最新の国内ガイドラインを確認できます。*
+- **[MSDマニュアル プロフェッショナル版：水分平衡](https://www.msdmanuals.com)**  
+  *世界共通の臨床基準として、不感蒸泄（10〜15mL/kg/day）や、体温上昇に伴う損失増（1℃につき10〜15%）の根拠となります。*
+
+- **[一般社団法人 日本臨床栄養代謝学会（JSPEN）：ガイドライン](https://www.jspen.or.jp)**  
+  *臨床現場における水・電解質管理の最新の国内ガイドラインを確認できます。*
     """)
 
-    st.markdown('<div class="report-header-box"><h4>3. 文献検索（最新知見）</h4></div>', unsafe_allow_html=True)
+    # 3. 文献検索（最新知見）
+    st.markdown(
+        '<div class="report-header-box"><h4>3. 文献検索（最新知見）</h4></div>',
+        unsafe_allow_html=True
+    )
     
     st.markdown("""
-    - **[CiNii Research（日本の論文検索：水分出納）](cinii.clear.ndl.go.jp)**  
-      *本システムで採用している各係数（15mL/kg/day等）の妥当性を検証した最新の論文を検索可能です。*
+- **[CiNii Research（日本の論文検索：水分出納）](https://cinii.clear.ndl.go.jp)**  
+  *本システムで採用している各係数（15mL/kg/day 等）の妥当性を検証した最新の論文を検索可能です。*
     """)
 
     st.warning("""
-    **臨床現場での利用にあたって**  
-    2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
-    """)
-
-elif st.session_state.page == "usage":
-    st.title("🧭 使い方（シーン別）")
-    st.info("本アプリは医療・看護・生活・学校など、複数の現場で共通に利用できる水分出納整理ツールです。")
-
-    usage_table = [
-        {
-            "利用シーン": "医療（病棟・外来）",
-            "主な対象": "入院患者・発熱患者",
-            "入力のポイント": "輸液量・尿量・発熱の有無を正確に",
-            "判定の見方": "体液過剰／脱水リスクの傾向把握",
-            "活用例": "回診前サマリー、PDF記録"
-        },
-        {
-            "利用シーン": "看護",
-            "主な対象": "水分管理が必要な患者",
-            "入力のポイント": "概算入力でも可、傾向重視",
-            "判定の見方": "前日との差・IN/OUT対照",
-            "活用例": "申し送り、患者説明"
-        },
-        {
-            "利用シーン": "生活・家庭",
-            "主な対象": "高齢者・体調不良時",
-            "入力のポイント": "飲水量・排尿回数を簡易入力",
-            "判定の見方": "不足・過剰の気づき",
-            "活用例": "受診判断の参考"
-        },
-        {
-            "利用シーン": "学校（保健・授業）",
-            "主な対象": "児童・生徒",
-            "入力のポイント": "体重・室温・活動量",
-            "判定の見方": "熱中症リスクの可視化",
-            "活用例": "保健指導、教材"
-        },
-        {
-            "利用シーン": "運動・部活動",
-            "主な対象": "競技者・部活動生徒",
-            "入力のポイント": "運動前後の水分量",
-            "判定の見方": "補給不足の確認",
-            "活用例": "飲水計画の立案"
-        },
-    ]
-
-    st.subheader("📋 利用シーン別一覧")
-    st.table(usage_table)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+**臨床現場での利用にあたって**  
+2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
+患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
+""")
