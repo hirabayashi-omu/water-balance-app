@@ -495,35 +495,7 @@ if st.session_state.page == "main":
     
         st.markdown("---")
         
-        # PDF生成用のデータを一元管理
-        report_data = {
-            "age": age,
-            "weight": weight,
-            "temp": temp,
-            "room_temp": r_temp,
-            "oral": oral,
-            "iv": iv,
-            "blood": blood,
-            "metabolic": metabolic,
-            "urine": urine_total,
-            "bleeding": bleeding,
-            "stool": stool_total,
-            "insensible": insensible_total,
-            "net": net_balance,
-            "judgment": judg,
-            "recorder": recorder
-        }
-    
-        # ボタン一つで生成からダウンロード準備まで完結
-        if st.button("📄 PDFレポートを生成して保存", use_container_width=True, key="single_pdf_btn"):
-            pdf_buf = generate_medical_report(report_data)
-            st.download_button(
-                label="📥 ここをクリックしてPDFをダウンロード",
-                data=pdf_buf,
-                file_name=f"FluidBalance_{get_jst_now().strftime('%Y%m%d')}.pdf",
-                mime="application/pdf",
-                key="final_download_action"
-            )
+
 
 
 
@@ -828,6 +800,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
