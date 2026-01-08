@@ -540,7 +540,7 @@ elif st.session_state.page == "theory":
 
     # 1. 入出量合計の算出式
     st.markdown(
-        '<div class="report-header-box"><h4>1. 入出量合計の算出式</h4></div>',
+        '<h4 class="report-header">1. 入出量合計の算出式</h4>',
         unsafe_allow_html=True
     )
 
@@ -555,7 +555,7 @@ elif st.session_state.page == "theory":
 
     # 2. 各項目の推算根拠
     st.markdown(
-        '<div class="report-header-box"><h4>2. 各項目の推算根拠</h4></div>',
+        '<h4 class="report-header">2. 各項目の推算根拠</h4>',
         unsafe_allow_html=True
     )
     
@@ -594,9 +594,10 @@ elif st.session_state.page == "theory":
 
     # 3. 判定基準
     st.markdown(
-        '<div class="report-header-box"><h4>3. 2026年現在の臨床的判定基準</h4></div>',
+        '<h4 class="report-header">3. 2026年現在の臨床的判定基準</h4>',
         unsafe_allow_html=True
     )
+
 
     st.write(
         "本システムでは、24時間あたりのネットバランスに基づき以下の判定を行っています。"
@@ -687,9 +688,10 @@ elif st.session_state.page == "refs":
 
     # 1. 公的ガイドライン・基準
     st.markdown(
-        '<div class="report-header-box"><h4>1. 公的ガイドライン・基準</h4></div>',
+        '<h4 class="report-header">1. 公的ガイドライン・基準</h4>',
         unsafe_allow_html=True
     )
+
     
     st.markdown("""
 - **[厚生労働省：日本人の食事摂取基準（2025年版）](https://www.mhlw.go.jp)**  
@@ -701,9 +703,10 @@ elif st.session_state.page == "refs":
 
     # 2. 臨床医学的エビデンス
     st.markdown(
-        '<div class="report-header-box"><h4>2. 臨床医学的エビデンス</h4></div>',
+        '<h4 class="report-header">2. 臨床医学的エビデンス</h4>',
         unsafe_allow_html=True
     )
+
     
     st.markdown("""
 - **[MSDマニュアル プロフェッショナル版：水分平衡](https://www.msdmanuals.com)**  
@@ -715,9 +718,10 @@ elif st.session_state.page == "refs":
 
     # 3. 文献検索（最新知見）
     st.markdown(
-        '<div class="report-header-box"><h4>3. 文献検索（最新知見）</h4></div>',
+        '<h4 class="report-header">3. 文献検索（最新知見）</h4>',
         unsafe_allow_html=True
     )
+
     
     st.markdown("""
 - **[CiNii Research（日本の論文検索：水分出納）](https://cinii.clear.ndl.go.jp)**  
@@ -729,6 +733,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
