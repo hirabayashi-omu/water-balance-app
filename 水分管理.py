@@ -434,67 +434,64 @@ if st.session_state.page == "main":
         
         s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"], key="out_stype")
 
-        # =========================================================
-        # 【修正版】集計・判定・PDF出力（重複を完全に排除）
-        # =========================================================
-        
-        # ---- 確定計算（変数名を net_balance に統一） ----
-        urine_total = st.session_state.u_times * st.session_state.u_vol
-        
-        # 便中水分の係数
-        stool_factor = 0.75 if s_type == "普通" else 0.85 if s_type == "軟便" else 0.95
-        stool_total = st.session_state.s_vol * stool_factor
+        s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"], key="main_stype")
+
+    # =========================================================
+    # 【一元化】計算・集計・表示エリア（ここより下は重複させない）
+    # =========================================================
     
-        # 不感蒸泄
-        insensible_total = 15.0 * weight
-        if temp > 37.0:
-            insensible_total *= (1 + 0.15 * (temp - 37.0))
-        if r_temp > 30.0:
-            insensible_total *= (1 + 0.175 * (r_temp - 30.0))
+    # 1. 確定計算
+    urine_total = st.session_state.u_times * st.session_state.u_vol
+    s_factor = 0.75 if s_type == "普通" else 0.85 if s_type == "軟便" else 0.95
+    stool_total = st.session_state.s_vol * s_factor
     
-        # 合計集計
-        total_in = oral + iv + blood + metabolic
-        total_out = urine_total + bleeding + stool_total + insensible_total
-        
-        # ここで net_balance を定義
-        net_balance = total_in - total_out
-    
-        # ---- 結果表示エリア（重複なし） ----
-        st.divider()
-        m1, m2, m3 = st.columns(3)
-        m1.metric("総流入 (IN)", f"{total_in:.0f} mL")
-        m2.metric("総流出 (OUT)", f"{total_out:.0f} mL")
-        # 定義した net_balance を使用
-        m3.metric("バランス", f"{net_balance:+.0f} mL")
-    
-        # 判定とPDF生成
-        if net_balance > 500:
-            judg = "体液過剰の傾向"
-            st.error(f"判定：{judg}")
-        elif net_balance < -200:
-            judg = "脱水リスク"
-            st.warning(f"判定：{judg}")
-        else:
-            judg = "維持範囲"
-            st.success(f"判定：{judg}")
-    
-        st.markdown("---")
-        if st.button("📄 PDFレポートを生成・保存", use_container_width=True, key="btn_pdf_final"):
-            report_data = {
-                "age": age, "weight": weight, "temp": temp, "room_temp": r_temp,
-                "oral": oral, "iv": iv, "blood": blood, "metabolic": metabolic,
-                "urine": urine_total, "bleeding": bleeding, "stool": stool_total,
-                "insensible": insensible_total, "net": net_balance, "judgment": judg,
-                "recorder": recorder
-            }
-            pdf_buf = generate_medical_report(report_data)
-            st.download_button(
-                label="📥 PDFをダウンロード",
-                data=pdf_buf,
-                file_name=f"FluidBalance_20260109.pdf",
-                mime="application/pdf",
-                key="btn_download_final"
-            )
+    insensible_total = 15.0 * weight
+    if temp > 37.0: 
+        insensible_total *= (1 + 0.15 * (temp - 37.0))
+    if r_temp > 30.0: 
+        insensible_total *= (1 + 0.175 * (r_temp - 30.0))
+
+    total_in = oral + iv + blood + metabolic
+    total_out = urine_total + bleeding + stool_total + insensible_total
+    net_balance = total_in - total_out
+
+    # 2. 結果表示（メトリクス）
+    st.divider()
+    m1, m2, m3 = st.columns(3)
+    m1.metric("総流入 (IN)", f"{total_in:.0f} mL")
+    m2.metric("総流出 (OUT)", f"{total_out:.0f} mL")
+    m3.metric("バランス", f"{net_balance:+.0f} mL")
+
+    # 3. 判定メッセージ
+    if net_balance > 500:
+        judg = "体液過剰の傾向"
+        st.error(f"判定：{judg}")
+    elif net_balance < -200:
+        judg = "脱水リスク"
+        st.warning(f"判定：{judg}")
+    else:
+        judg = "維持範囲"
+        st.success(f"判定：{judg}")
+
+    # 4. PDFレポート生成ボタン（一つに集約）
+    st.markdown("---")
+    if st.button("📄 PDFレポートを生成・保存", use_container_width=True, key="btn_final_report"):
+        report_data = {
+            "age": age, "weight": weight, "temp": temp, "room_temp": r_temp,
+            "oral": oral, "iv": iv, "blood": blood, "metabolic": metabolic,
+            "urine": urine_total, "bleeding": bleeding, "stool": stool_total,
+            "insensible": insensible_total, "net": net_balance, "judgment": judg,
+            "recorder": recorder
+        }
+        pdf_buf = generate_medical_report(report_data)
+        st.download_button(
+            label="📥 PDFをダウンロード",
+            data=pdf_buf,
+            file_name=f"FluidBalance_20260109.pdf",
+            mime="application/pdf",
+            key="btn_final_download"
+        )
+
 
 
     
@@ -817,6 +814,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
