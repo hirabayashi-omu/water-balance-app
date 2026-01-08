@@ -410,7 +410,8 @@ if st.session_state.page == "main":
     # 便量推算ダイアログ（疾患補正）
     # ================================
     if st.session_state.show_stool_dialog:
-        with st.dialog("標準的な便量の推算（体重・状態別）"):
+        @st.dialog("標準的な便量の推算（体重・状態別）")
+        def stool_dialog():
             condition = st.selectbox(
                 "状態・疾患区分",
                 [
@@ -600,6 +601,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
