@@ -334,6 +334,16 @@ st.markdown("---")
 # 5. メイン計算ページ
 # ================================
 if st.session_state.page == "main":
+    # --- ここで変数を初期化（NameError対策） ---
+    oral = iv = blood = metabolic = 0
+    urine = bleeding = stool = insensible = 0
+    age = 20
+    weight = 60.0
+    temp = 36.5
+    r_temp = 24.0
+    recorder = ""
+    s_type = "普通"
+    # ---------------------------------------
 
     # ------------------
     # ダイアログ呼び出し（最上流）
@@ -745,4 +755,5 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
