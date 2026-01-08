@@ -399,41 +399,47 @@ if st.session_state.page == "main":
             st.session_state.u_times
         )
 
-        # 1回尿量（左）＋ 推算ボタン（右）
+        # ================================
+        # メインUI内の尿量・便量セクション修正案
+        # ================================
+        
+        # --- 尿量セクション ---
         ucol_l, ucol_r = st.columns([3, 2])
-
+        
         with ucol_l:
-            st.session_state.u_vol = st.number_input(
+            # 直接セッション状態を引数にせず、一度変数に受けるのが安定します
+            u_vol_val = st.number_input(
                 "1回尿量(mL)",
-                0,
-                1000,
-                st.session_state.u_vol
+                0, 1000, 
+                value=st.session_state.u_vol,
+                key="u_vol_input_widget"
             )
-
+            # 入力値をセッションに同期
+            st.session_state.u_vol = u_vol_val
+        
         with ucol_r:
             st.markdown("###### ")
-            if st.button("📐 標準尿量から推算", use_container_width=True):
-                st.session_state.show_urine_dialog = True
-
-
-
-        bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
-
-        # ---- 便量（実測＋推算） ----
+            # ボタンが押されたそのブロック内で直接ダイアログを呼び出すのが最も確実です
+            if st.button("📐 標準尿量から推算", use_container_width=True, key="btn_urine_calc"):
+                urine_dialog() # 直接関数を叩く
+        
+        # --- 便量セクション ---
         scol_l, scol_r = st.columns([3, 2])
-
+        
         with scol_l:
-            st.session_state.s_vol = st.number_input(
+            s_vol_val = st.number_input(
                 "便重量(g)",
-                0,
-                1000,
-                st.session_state.s_vol
+                0, 1000, 
+                value=st.session_state.s_vol,
+                key="s_vol_input_widget"
             )
-
+            st.session_state.s_vol = s_vol_val
+        
         with scol_r:
             st.markdown("###### ")
-            if st.button("📐 標準便量から推算", use_container_width=True):
-                st.session_state.show_stool_dialog = True
+            if st.button("📐 標準便量から推算", use_container_width=True, key="btn_stool_calc"):
+                stool_dialog() # 直接関数を叩く
+
 
         s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
 
@@ -739,32 +745,4 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
