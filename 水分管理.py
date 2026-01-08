@@ -403,21 +403,37 @@ if st.session_state.page == "main":
             st.session_state.u_times
         )
 
-        # 1回尿量（左）＋ 推算ボタン（右）
-        ucol_l, ucol_r = st.columns([3, 2])
+    ucol_l, ucol_r = st.columns([3, 2])
+    
+    with ucol_l:
+        st.session_state.u_vol = st.number_input(
+            "1回尿量(mL)",
+            0,
+            1000,
+            st.session_state.u_vol
+        )
+    
+    with ucol_r:
+        st.markdown("###### ")
+        if st.button("📐 標準尿量から推算", use_container_width=True):
+            with st.dialog("🚻 標準尿量の推算（体重補正）"):
+                weight = st.session_state.get("weight", 60.0)
+                std_type = st.selectbox(
+                    "評価基準を選択",
+                    ["正常（20 mL/kg/day）", "少尿境界（10 mL/kg/day）", "多尿境界（40 mL/kg/day）"]
+                )
+                coef = 20 if "20" in std_type else 10 if "10" in std_type else 40
+                std_urine = coef * weight
+                est_u_vol = std_urine / max(st.session_state.u_times, 1)
+                st.info(f"推算24時間尿量：{std_urine:.0f} mL/day\n1回尿量：約 {est_u_vol:.0f} mL")
+    
+                c_ok, c_ng = st.columns(2)
+                if c_ok.button("✅ 入力に反映"):
+                    st.session_state.u_vol = int(est_u_vol)
+                    st.experimental_rerun()
+                if c_ng.button("❌ キャンセル"):
+                    st.experimental_rerun()
 
-        with ucol_l:
-            st.session_state.u_vol = st.number_input(
-                "1回尿量(mL)",
-                0,
-                1000,
-                st.session_state.u_vol
-            )
-
-        with ucol_r:
-            st.markdown("###### ")
-            if st.button("📐 標準尿量から推算", use_container_width=True):
-                st.session_state.show_urine_dialog = True
 
         bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
 
@@ -741,6 +757,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
