@@ -258,15 +258,15 @@ if st.session_state.page == "main":
     weight = c2.number_input("体重(kg)", 1.0, 200.0, 60.0, 0.1)
     temp = c3.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1)
     r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5)
-    recorder = c5.text_input("記録責任者")
+    recorder = c5.text_input("記録者")
 
     # ---- IN / OUT ----
     col_in, col_out = st.columns(2)
 
     with col_in:
         oral = st.number_input("経口摂取(mL)", 0, 10000, 1500, 50)
-        iv = st.number_input("静脈輸液(mL)", 0, 10000, 0, 50)
-        blood = st.number_input("輸血(mL)", 0, 5000, 0, 50)
+        iv = st.number_input("静脈輸液(mL) ※医療機関で実施", 0, 10000, 0, 50)
+        blood = st.number_input("輸血(mL)　※医療機関で実施", 0, 5000, 0, 50)
         metabolic = 5 * weight
 
     with col_out:
@@ -613,6 +613,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
