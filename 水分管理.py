@@ -435,6 +435,7 @@ if st.session_state.page == "main":
                     st.experimental_rerun()
 
 
+
         bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
 
         # ---- 便量（実測＋推算） ----
