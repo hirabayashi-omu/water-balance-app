@@ -100,10 +100,8 @@ def urine_dialog():
     if c_ok.button("✅ 入力に反映"):
         st.session_state.u_vol = int(est_u_vol)
         st.session_state.show_urine_dialog = False
-        st.rerun()
     if c_ng.button("❌ キャンセル"):
         st.session_state.show_urine_dialog = False
-        st.rerun()
 
 
 
@@ -143,10 +141,8 @@ def stool_dialog():
     if c_ok.button("✅ 入力に反映"):
         st.session_state.s_vol = int(est_stool)
         st.session_state.show_stool_dialog = False
-        st.rerun()
     if c_ng.button("❌ キャンセル"):
         st.session_state.show_stool_dialog = False
-        st.rerun()
 
 
 
@@ -353,12 +349,12 @@ if st.session_state.page == "main":
     # dialog 呼び出し（最上流）
     # ================================
     if st.session_state.page == "main":
-    
+        # ダイアログ優先表示
         if st.session_state.show_urine_dialog:
             urine_dialog()
-    
         if st.session_state.show_stool_dialog:
             stool_dialog()
+
     
         # ↓↓↓ ここから通常の UI ↓↓↓
         st.title("🏥 水分出納バランス記録")
@@ -754,6 +750,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
