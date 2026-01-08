@@ -71,27 +71,30 @@ if "weight" not in st.session_state:
 # ================================
 # 尿量推算ダイアログ（定義だけ）
 # ================================
-def urine_dialog():
-    weight = st.session_state.get("weight", 60.0)  # 初期値60kgを保証
-    std_type = st.selectbox(
-        "評価基準を選択",
-        ["正常（20 mL/kg/day）", "少尿境界（10 mL/kg/day）", "多尿境界（40 mL/kg/day）"]
-    )
+def urine_dialog_modal():
+    weight = st.session_state.get("weight", 60.0)
 
-    coef = 20 if "20" in std_type else 10 if "10" in std_type else 40
-    std_urine = coef * weight
-    est_u_vol = std_urine / max(st.session_state.get("u_times", 5), 1)
+    with st.modal("🚻 標準尿量の推算（体重補正）"):
+        std_type = st.selectbox(
+            "評価基準を選択",
+            ["正常（20 mL/kg/day）", "少尿境界（10 mL/kg/day）", "多尿境界（40 mL/kg/day）"]
+        )
 
-    st.info(f"推算24時間尿量：{std_urine:.0f} mL/day\n1回尿量：約 {est_u_vol:.0f} mL")
+        coef = 20 if "20" in std_type else 10 if "10" in std_type else 40
+        std_urine = coef * weight
+        est_u_vol = std_urine / max(st.session_state.get("u_times", 5), 1)
 
-    c_ok, c_ng = st.columns(2)
-    if c_ok.button("✅ 入力に反映"):
-        st.session_state.u_vol = int(est_u_vol)
-        st.session_state.show_urine_dialog = False
-        st.experimental_rerun()
-    if c_ng.button("❌ キャンセル"):
-        st.session_state.show_urine_dialog = False
-        st.experimental_rerun()
+        st.info(f"推算24時間尿量：{std_urine:.0f} mL/day\n1回尿量：約 {est_u_vol:.0f} mL")
+
+        c_ok, c_ng = st.columns(2)
+        if c_ok.button("✅ 入力に反映"):
+            st.session_state.u_vol = int(est_u_vol)
+            st.session_state.show_urine_dialog = False
+            st.experimental_rerun()
+        if c_ng.button("❌ キャンセル"):
+            st.session_state.show_urine_dialog = False
+            st.experimental_rerun()
+
 
 
 
@@ -736,6 +739,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
