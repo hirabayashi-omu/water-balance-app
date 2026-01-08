@@ -1,5 +1,6 @@
 import streamlit as st
 import datetime
+import pytz  # タイムゾーン処理用に追加
 from io import BytesIO
 
 # PDF生成用
@@ -9,6 +10,12 @@ from reportlab.lib.units import mm
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+
+# ================================
+# 0. タイムゾーン設定 (JST: 日本標準時)
+# ================================
+def get_jst_now():
+    return datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
 
 # ================================
 # 1. ページ構成・デザイン
@@ -23,7 +30,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ================================
-# 2. PDF生成エンジン (レイアウト修正版)
+# 2. PDF生成エンジン (日時・レイアウト修正版)
 # ================================
 try:
     pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
@@ -39,8 +46,11 @@ def generate_medical_report(data):
     c.setFont("HeiseiMin-W3", 18)
     c.drawCentredString(w/2, h - 20*mm, "水分出納管理記録 (Fluid Balance Report)")
     
+    # 日本時間の取得とフォーマット
+    jst_now = get_jst_now().strftime('%Y年%m月%d日 %H:%M')
+    
     c.setFont("HeiseiMin-W3", 10)
-    c.drawString(20*mm, h - 30*mm, f"記録日時: {datetime.datetime.now().strftime('%Y/%m/%d %H:%M')}")
+    c.drawString(20*mm, h - 30*mm, f"記録日時 (JST): {jst_now}")
     c.drawString(150*mm, h - 30*mm, f"記録者: {data['recorder'] or '__________'}")
     c.setLineWidth(0.5)
     c.line(20*mm, h - 32*mm, 190*mm, h - 32*mm)
@@ -49,10 +59,9 @@ def generate_medical_report(data):
     y = h - 45*mm
     c.setFont("HeiseiMin-W3", 12)
     c.drawString(20*mm, y, "【基本情報】")
-    y -= 10*mm # 余白を確保
+    y -= 10*mm
     
     c.setFont("HeiseiMin-W3", 10)
-    # 数値を整形（有効数字の考慮）
     base_info = [
         f"年齢: {data['age']} 歳", f"現体重: {data['weight']:.1f} kg", 
         f"体温: {data['temp']:.1f} ℃", f"室温: {data['room_temp']:.1f} ℃",
@@ -63,7 +72,7 @@ def generate_medical_report(data):
         row = i // 2
         c.drawString((25 + col*80)*mm, y - row*8*mm, info)
     
-    y -= 20*mm # 罫線が重ならないよう十分な距離をとる
+    y -= 20*mm
     c.line(20*mm, y, 190*mm, y)
 
     # --- 入出量テーブル ---
@@ -72,7 +81,6 @@ def generate_medical_report(data):
     c.drawString(20*mm, y, "【入出量詳細 / 24時間換算】")
     y -= 10*mm
 
-    # テーブル見出し
     c.setFont("HeiseiMin-W3", 10)
     c.drawString(25*mm, y, "項目 (IN / 摂取)")
     c.drawString(75*mm, y, "数値 (mL)")
@@ -80,9 +88,8 @@ def generate_medical_report(data):
     c.drawString(165*mm, y, "数値 (mL)")
     y -= 4*mm
     c.line(20*mm, y, 190*mm, y)
-    y -= 8*mm # 1行目との間隔
+    y -= 8*mm
 
-    # 各数値を整数に丸めて表示（1mL単位）
     rows = [
         ("経口摂取", f"{data['oral']:.0f}", "尿量", f"{data['urine']:.0f}"),
         ("静脈輸液", f"{data['iv']:.0f}", "消化管・出血", f"{data['bleeding']:.0f}"),
@@ -92,12 +99,12 @@ def generate_medical_report(data):
 
     for in_n, in_v, out_n, out_v in rows:
         c.drawString(25*mm, y, in_n)
-        c.drawRightString(90*mm, y, in_v) # 位置微調整
+        c.drawRightString(90*mm, y, in_v)
         c.drawString(110*mm, y, out_n)
         c.drawRightString(180*mm, y, out_v)
-        y -= 8*mm # 行間を広めに
+        y -= 8*mm
 
-    y -= 2*mm # 最後の行と線の間隔
+    y -= 2*mm
     c.line(20*mm, y, 190*mm, y)
     y -= 10*mm
 
@@ -113,14 +120,13 @@ def generate_medical_report(data):
     
     c.setFont("HeiseiMin-W3", 10)
     c.drawString(25*mm, y, "総合判定:")
-    # 判定が長い場合に備え、少しずらして表示
     c.drawString(45*mm, y, data['judgment'])
     
-    y = 30*mm # フッター位置に固定
+    y = 30*mm
     c.setFont("HeiseiMin-W3", 8)
     c.drawString(20*mm, y, "※不感蒸泄算出式: 15ml × kg × (発熱補正 1.0 + 0.15 × ΔT) × (室温補正 1.0 + 0.175 × ΔRoomT)")
     y -= 4*mm
-    c.drawString(20*mm, y, "※本レポートは入力データに基づく推定値です。臨床判断は必ず医師の指示に従ってください。")
+    c.drawString(20*mm, y, "※本レポートは2026年現在の医学的推定に基づいています。臨床判断は医師に従ってください。")
 
     c.showPage()
     c.save()
@@ -130,12 +136,16 @@ def generate_medical_report(data):
 # ================================
 # 3. アプリメインUI
 # ================================
+# 現在時刻（2026年1月8日想定）の取得
+now_jst = get_jst_now()
+
 st.title("🏥 水分出納バランス記録システム")
+st.caption(f"現在の記録セッション開始: {now_jst.strftime('%Y/%m/%d %H:%M:%S')} (JST)")
 
 with st.container():
     st.markdown('<div class="report-header"><h4>1. 基本・臨床パラメータ</h4></div>', unsafe_allow_html=True)
     c1, c2, c3, c4, c5 = st.columns(5)
-    with c1: age = st.number_input("年齢", 0, 120, 20) # デフォルト20歳に変更
+    with c1: age = st.number_input("年齢", 0, 120, 20)
     with c2: weight = st.number_input("体重 (kg)", 1.0, 200.0, 60.0, 0.1)
     with c3: temp = st.number_input("体温 (℃)", 34.0, 42.0, 36.5, 0.1)
     with c4: r_temp = st.number_input("室温 (℃)", 10.0, 40.0, 24.0, 0.5)
@@ -152,9 +162,9 @@ col_in_ui, col_out_ui = st.columns(2)
 with col_in_ui:
     st.subheader("📥 Intake (摂取)")
     oral = st.number_input("経口・経管栄養 (mL)", 0, 10000, 1500, 50)
-    iv = st.number_input("静脈輸液 (mL)", 0, 10000, 0, 50) # デフォルト0mLに変更
+    iv = st.number_input("静脈輸液 (mL)", 0, 10000, 0, 50)
     blood = st.number_input("輸血 (mL)", 0, 5000, 0, 50)
-    metabolic = 5 * weight # 代謝水
+    metabolic = 5 * weight 
 
 with col_out_ui:
     st.subheader("📤 Output (排泄)")
@@ -194,7 +204,7 @@ else:
     judg = "維持範囲内 (Maintenance range)。現状維持。"
     st.success(judg)
 
-# データ受け渡し用辞書
+# データ受け渡し
 report_data = {
     "age": age, "weight": weight, "temp": temp, "room_temp": r_temp,
     "bw_percent": bw_p, "bw_total": bw_t,
@@ -206,9 +216,10 @@ report_data = {
 st.markdown("---")
 if st.button("📝 医療レポート(PDF)を生成"):
     pdf = generate_medical_report(report_data)
+    current_date = get_jst_now().strftime('%Y%m%d')
     st.download_button(
         label="📥 レポートをダウンロード",
         data=pdf,
-        file_name=f"FluidBalance_{datetime.date.today()}_{recorder}.pdf",
+        file_name=f"FluidBalance_{current_date}_{recorder}.pdf",
         mime="application/pdf"
     )
