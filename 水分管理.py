@@ -374,7 +374,13 @@ if st.session_state.page == "main":
     # ---- 基本情報 ----
     c1, c2, c3, c4, c5 = st.columns(5)
     age = c1.number_input("年齢", 0, 120, 20)
-    weight = c2.number_input("体重(kg)", 1.0, 200.0, 60.0, 0.1, key="weight")
+    weight = st.number_input(
+        "体重(kg)",
+        1.0,
+        200.0,
+        step=0.1,
+        key="weight"
+    )
     temp = c3.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1)
     r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5)
     recorder = c5.text_input("記録者")
@@ -741,6 +747,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
