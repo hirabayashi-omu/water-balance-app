@@ -71,7 +71,8 @@ if "weight" not in st.session_state:
 # ================================
 # 尿量推算ダイアログ（定義だけ）
 # ================================
-def urine_dialog_modal():
+def urine_dialog():
+    # 体重を取得（未設定なら60kg）
     weight = st.session_state.get("weight", 60.0)
 
     with st.modal("🚻 標準尿量の推算（体重補正）"):
@@ -94,8 +95,6 @@ def urine_dialog_modal():
         if c_ng.button("❌ キャンセル"):
             st.session_state.show_urine_dialog = False
             st.experimental_rerun()
-
-
 
 
 
@@ -739,6 +738,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
