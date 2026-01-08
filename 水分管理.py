@@ -21,6 +21,25 @@ def get_jst_now():
 # ================================
 st.set_page_config(page_title="水分出納管理システム", layout="wide")
 
+# ================================
+# session_state 初期化（必須）
+# ================================
+if "u_times" not in st.session_state:
+    st.session_state.u_times = 5
+
+if "u_vol" not in st.session_state:
+    st.session_state.u_vol = 250
+
+if "s_vol" not in st.session_state:
+    st.session_state.s_vol = 150
+
+if "show_urine_dialog" not in st.session_state:
+    st.session_state.show_urine_dialog = False
+
+if "show_stool_dialog" not in st.session_state:
+    st.session_state.show_stool_dialog = False
+
+
 st.markdown("""
 <style>
 .report-header-box {
@@ -591,6 +610,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
