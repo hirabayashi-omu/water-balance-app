@@ -399,11 +399,6 @@ if st.button("PDF レポートを生成"):
         mime="application/pdf"
     )
 
-    except Exception as e:
-        st.error(
-            "PDF 生成中にエラーが発生しました。サーバ側に `pdfkit` と `wkhtmltopdf` がインストールされているか確認してください。"
-        )
-        st.code(str(e))
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
@@ -496,6 +491,7 @@ def generate_pdf_report(
 
     buffer.seek(0)
     return buffer
+
 
 
 
