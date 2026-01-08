@@ -9,6 +9,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
 
 # ================================
 # 0. タイムゾーン設定
@@ -23,9 +25,8 @@ st.set_page_config(page_title="水分出納管理システム", layout="wide")
 
 st.markdown("""
 <style>
-/* IN / OUT 見出し専用（ダークモード完全対応） */
 .section-header {
-    background-color: rgba(30, 30, 30, 0.85);
+    background-color: rgba(30,30,30,0.85);
     color: #F5F5F5 !important;
     padding: 0.6em 0.8em;
     border-radius: 0.6em;
@@ -34,59 +35,44 @@ st.markdown("""
     text-align: center;
     border: 1px solid rgba(255,255,255,0.25);
 }
-
-/* ライトモード補正 */
 @media (prefers-color-scheme: light) {
     .section-header {
         background-color: #F1F3F6;
-        color: #111111 !important;
+        color: #111 !important;
         border: 1px solid #D0D4DA;
     }
 }
 </style>
 """, unsafe_allow_html=True)
 
+# ================================
+# 2. session_state 初期化
+# ================================
+for key, val in [("u_times", 5), ("u_vol", 250), ("s_vol", 150),
+                 ("show_urine_dialog", False), ("show_stool_dialog", False),
+                 ("weight", 60.0), ("page", "main")]:
+    if key not in st.session_state:
+        st.session_state[key] = val
 
 # ================================
-# session_state 初期化（必須）
+# 3. ダイアログ関数
 # ================================
-if "u_times" not in st.session_state:
-    st.session_state.u_times = 5
-
-if "u_vol" not in st.session_state:
-    st.session_state.u_vol = 250
-
-if "s_vol" not in st.session_state:
-    st.session_state.s_vol = 150
-
-if "show_urine_dialog" not in st.session_state:
-    st.session_state.show_urine_dialog = False
-
-if "show_stool_dialog" not in st.session_state:
-    st.session_state.show_stool_dialog = False
-
-if "weight" not in st.session_state:
-    st.session_state.weight = 60.0
-
-
-
-# ================================
-# 尿量推算ダイアログ（定義だけ）
-# ================================
-@st.dialog("🚻 標準尿量の推算（体重補正）")
 def urine_dialog():
-    weight = st.session_state.get("weight", 60.0)
-
+    st.markdown("**体重と基準値から24時間尿量を推算します**")
+    weight = st.session_state.weight
     std_type = st.selectbox(
         "評価基準を選択",
         ["正常（20 mL/kg/day）", "少尿境界（10 mL/kg/day）", "多尿境界（40 mL/kg/day）"]
     )
-
     coef = 20 if "20" in std_type else 10 if "10" in std_type else 40
     std_urine = coef * weight
     est_u_vol = std_urine / max(st.session_state.u_times, 1)
 
-    st.info(f"推算24時間尿量：{std_urine:.0f} mL/day\n1回尿量：約 {est_u_vol:.0f} mL")
+    st.info(
+        f"推算24時間尿量：{std_urine:.0f} mL/day  \n"
+        f"排尿回数：{st.session_state.u_times} 回  \n"
+        f"▶ **1回尿量：約 {est_u_vol:.0f} mL**"
+    )
 
     c_ok, c_ng = st.columns(2)
     if c_ok.button("✅ 入力に反映"):
@@ -97,27 +83,13 @@ def urine_dialog():
         st.session_state.show_urine_dialog = False
         st.rerun()
 
-        
-
-
-# ================================
-# 便量推算ダイアログ（定義だけ）
-# ================================
-@st.dialog("標準的な便量の推算（体重・状態別）")
 def stool_dialog():
-    weight = st.session_state.get("weight", 60.0)
+    st.markdown("**体重と状態に基づく便量を推算します**")
+    weight = st.session_state.weight
     condition = st.selectbox(
         "状態・疾患区分",
-        [
-            "標準（健康時）",
-            "軟便",
-            "下痢",
-            "発熱・感染症",
-            "経腸栄養中",
-            "便秘傾向"
-        ]
+        ["標準（健康時）", "軟便", "下痢", "発熱・感染症", "経腸栄養中", "便秘傾向"]
     )
-
     factor_table = {
         "標準（健康時）": 1.0,
         "軟便": 1.5,
@@ -126,41 +98,20 @@ def stool_dialog():
         "経腸栄養中": 1.8,
         "便秘傾向": 0.6
     }
-
     est_stool = 2.0 * weight * factor_table[condition]
     st.metric("推算便重量（1日）", f"{est_stool:.0f} g")
 
     col_ok, col_ng = st.columns(2)
-    if col_ok.button("入力に反映"):
+    if col_ok.button("✅ 入力に反映"):
         st.session_state.s_vol = int(est_stool)
         st.session_state.show_stool_dialog = False
         st.rerun()
-
-    if col_ng.button("キャンセル"):
+    if col_ng.button("❌ キャンセル"):
         st.session_state.show_stool_dialog = False
         st.rerun()
 
-st.markdown("""
-<style>
-.report-header-box {
-    background-color: #e9ecef;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border-left: 6px solid #007bff;
-    margin: 20px 0;
-}
-.report-header-box h4 { margin: 0; }
-div.stButton > button {
-    border-radius: 10px;
-    font-weight: bold;
-    height: 3em;
-}
-[data-testid="stMetricValue"] { color: #007bff; }
-</style>
-""", unsafe_allow_html=True)
-
 # ================================
-# 2. PDF設定
+# 4. PDF生成関数
 # ================================
 try:
     pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
@@ -168,321 +119,167 @@ except:
     pass
 
 def generate_medical_report(data):
-    from reportlab.platypus import Table, TableStyle
-    from reportlab.lib import colors
-
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     w, h = A4
+    room_temp = data.get("room_temp", 0)
 
-    room_temp = data.get("room_temp", data.get("r_temp", 0))
-
-    # ================================
     # タイトル
-    # ================================
     c.setFont("HeiseiMin-W3", 18)
     c.drawCentredString(w / 2, h - 20 * mm, "水分出納管理報告書（サマリー）")
-
     c.setFont("HeiseiMin-W3", 10)
-    c.drawString(20 * mm, h - 30 * mm, f"記録日時：{get_jst_now().strftime('%Y/%m/%d %H:%M')}")
-    c.drawRightString(w - 20 * mm, h - 30 * mm, f"記録者：{data.get('recorder', '未記入')}")
+    c.drawString(20*mm, h - 30*mm, f"記録日時：{get_jst_now().strftime('%Y/%m/%d %H:%M')}")
+    c.drawRightString(w-20*mm, h-30*mm, f"記録者：{data.get('recorder','未記入')}")
 
-    y = h - 42 * mm
-
-    # ================================
-    # 【基本情報】（箇条書き）
-    # ================================
+    y = h - 42*mm
+    # 基本情報
     c.setFont("HeiseiMin-W3", 12)
-    c.drawString(20 * mm, y, "【基本情報】")
-    y -= 6 * mm
-
+    c.drawString(20*mm, y, "【基本情報】")
+    y -= 6*mm
     c.setFont("HeiseiMin-W3", 10)
-    c.drawString(25 * mm, y, f"・年齢：{data['age']} 歳")
-    y -= 5 * mm
-    c.drawString(25 * mm, y, f"・体重：{data['weight']:.1f} kg")
-    y -= 5 * mm
-    c.drawString(25 * mm, y, f"・体温：{data['temp']:.1f} ℃")
-    y -= 5 * mm
-    c.drawString(25 * mm, y, f"・室温：{room_temp:.1f} ℃")
+    for key in ["age","weight","temp"]:
+        c.drawString(25*mm, y, f"・{key.capitalize()}：{data[key]}")
+        y -= 5*mm
+    c.drawString(25*mm, y, f"・室温：{room_temp:.1f} ℃")
+    y -= 8*mm
 
-    y -= 8 * mm
-
-    # ================================
-    # 【入出量内訳】（IN/OUT 横並び・合計行付き）
-    # ================================
-    c.setFont("HeiseiMin-W3", 12)
-    c.drawString(20 * mm, y, "【入出量内訳】")
-    y -= 6 * mm
-
-    total_in = (
-        data["oral"]
-        + data["iv"]
-        + data["blood"]
-        + data["metabolic"]
-    )
-    total_out = (
-        data["urine"]
-        + data["bleeding"]
-        + data["stool"]
-        + data["insensible"]
-    )
-
+    # 入出量テーブル
+    total_in = data["oral"] + data["iv"] + data["blood"] + data["metabolic"]
+    total_out = data["urine"] + data["bleeding"] + data["stool"] + data["insensible"]
     io_table = Table(
         [
-            ["IN（流入）", "", "OUT（流出）", ""],
-            ["経口摂取", f"{data['oral']} mL", "尿量", f"{data['urine']} mL"],
-            ["静脈輸液", f"{data['iv']} mL", "出血等", f"{data['bleeding']} mL"],
-            ["輸血", f"{data['blood']} mL", "便中水分", f"{data['stool']:.0f} mL"],
-            ["代謝水", f"{data['metabolic']:.0f} mL", "不感蒸泄", f"{data['insensible']:.0f} mL"],
-            ["合計", f"{total_in:.0f} mL", "合計", f"{total_out:.0f} mL"],
+            ["IN（流入）","", "OUT（流出）",""],
+            ["経口摂取", f"{data['oral']} mL","尿量", f"{data['urine']} mL"],
+            ["静脈輸液", f"{data['iv']} mL","出血等", f"{data['bleeding']} mL"],
+            ["輸血", f"{data['blood']} mL","便中水分", f"{data['stool']:.0f} mL"],
+            ["代謝水", f"{data['metabolic']:.0f} mL","不感蒸泄", f"{data['insensible']:.0f} mL"],
+            ["合計", f"{total_in:.0f} mL","合計", f"{total_out:.0f} mL"]
         ],
-        colWidths=[38 * mm, 32 * mm, 38 * mm, 32 * mm]
+        colWidths=[38*mm,32*mm,38*mm,32*mm]
     )
-
     io_table.setStyle(TableStyle([
-        # 見出し上下罫線
-        ("LINEABOVE", (0, 0), (-1, 0), 0.8, colors.black),
-
-        # 合計行の強調（上罫線＋下罫線）
-        ("LINEABOVE", (0, -1), (-1, -1), 0.8, colors.black),
-        ("LINEBELOW", (0, -1), (-1, -1), 0.8, colors.black),
-
-        # IN / OUT 境界線
-        ("LINEBEFORE", (2, 0), (2, -1), 0.8, colors.black),
-
-        # フォント
-        ("FONT", (0, 0), (-1, 0), "HeiseiMin-W3", 10),
-        ("FONT", (0, 1), (-1, -2), "HeiseiMin-W3", 10),
-        ("FONT", (0, -1), (-1, -1), "HeiseiMin-W3", 10),
-
-        # 配置
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("ALIGN", (1, 1), (1, -1), "RIGHT"),
-        ("ALIGN", (3, 1), (3, -1), "RIGHT"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEABOVE",(0,0),(-1,0),0.8,colors.black),
+        ("LINEABOVE",(0,-1),(-1,-1),0.8,colors.black),
+        ("LINEBELOW",(0,-1),(-1,-1),0.8,colors.black),
+        ("LINEBEFORE",(2,0),(2,-1),0.8,colors.black),
+        ("FONT",(0,0),(-1,-1),"HeiseiMin-W3",10),
+        ("ALIGN",(0,0),(-1,0),"CENTER"),
+        ("ALIGN",(1,1),(1,-1),"RIGHT"),
+        ("ALIGN",(3,1),(3,-1),"RIGHT"),
+        ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
     ]))
+    table_width, table_height = io_table.wrap(w-40*mm,h)
+    io_table.drawOn(c, 20*mm, y - table_height)
+    y -= table_height + 10*mm
 
-    table_width, table_height = io_table.wrap(w - 40 * mm, h)
-    io_table.drawOn(c, 20 * mm, y - table_height)
-    y -= table_height + 10 * mm
-
-    # ================================
-    # 【判定】（薄いグレー帯）
-    # ================================
-    band_height = 14 * mm
+    # 判定
+    band_height = 14*mm
     c.setFillColor(colors.whitesmoke)
-    c.rect(20 * mm, y - band_height, w - 40 * mm, band_height, fill=1, stroke=0)
-
+    c.rect(20*mm, y-band_height, w-40*mm, band_height, fill=1, stroke=0)
     c.setFillColor(colors.black)
-    c.setFont("HeiseiMin-W3", 12)
-    c.drawString(22 * mm, y - 5 * mm, "【判定】")
+    c.setFont("HeiseiMin-W3",12)
+    c.drawString(22*mm, y-5*mm, "【判定】")
+    c.setFont("HeiseiMin-W3",14)
+    c.drawRightString(w-22*mm, y-5*mm, f"ネットバランス： {data['net']:+.0f} mL / day")
+    y -= band_height + 4*mm
+    c.setFont("HeiseiMin-W3",11)
+    c.drawString(25*mm, y, f"評価： {data['judgment']}")
+    y -= 10*mm
 
-    c.setFont("HeiseiMin-W3", 14)
-    c.drawRightString(
-        w - 22 * mm,
-        y - 5 * mm,
-        f"ネットバランス： {data['net']:+.0f} mL / day"
-    )
-
-    y -= band_height + 4 * mm
-
-    c.setFont("HeiseiMin-W3", 11)
-    c.drawString(25 * mm, y, f"評価： {data['judgment']}")
-
-    y -= 10 * mm
-
-    # ================================
     # 注意書き
-    # ================================
-    c.setFont("HeiseiMin-W3", 9)
-    c.drawString(
-        20 * mm, y,
-        "※本報告書は水分出納管理の補助を目的としたものであり、"
-        "最終的な臨床判断は医師が行ってください。"
-    )
-
+    c.setFont("HeiseiMin-W3",9)
+    c.drawString(20*mm, y,
+                 "※本報告書は水分出納管理の補助を目的としたものであり、"
+                 "最終的な臨床判断は医師が行ってください。")
     c.showPage()
     c.save()
     buf.seek(0)
     return buf
 
-
 # ================================
-# 3. ページ状態管理
+# 5. タブナビゲーション
 # ================================
-if "page" not in st.session_state:
-    st.session_state.page = "main"
-
-# ================================
-# 4. タブ風ナビゲーション
-# ================================
-b1, b2, b3, b4 = st.columns(4)
-
-with b1:
-    if st.button("🏠 メイン計算", use_container_width=True):
-        st.session_state.page = "main"
-with b2:
-    if st.button("📖 推算根拠", use_container_width=True):
-        st.session_state.page = "theory"
-with b3:
-    if st.button("🧭 使い方", use_container_width=True):
-        st.session_state.page = "usage"
-with b4:
-    if st.button("📚 引用・参考文献", use_container_width=True):
-        st.session_state.page = "refs"
-
+b1,b2,b3,b4 = st.columns(4)
+if b1.button("🏠 メイン計算"): st.session_state.page="main"
+if b2.button("📖 推算根拠"): st.session_state.page="theory"
+if b3.button("🧭 使い方"): st.session_state.page="usage"
+if b4.button("📚 引用・参考文献"): st.session_state.page="refs"
 
 st.markdown("---")
 
 # ================================
-# 5. メイン計算ページ
+# 6. メイン計算ページ
 # ================================
-if st.session_state.page == "main":
+if st.session_state.page=="main":
+    # ダイアログ呼び出し
+    if st.session_state.show_urine_dialog:
+        urine_dialog()
+    if st.session_state.show_stool_dialog:
+        stool_dialog()
 
-    # ================================
-    # dialog 呼び出し（最上流）
-    # ================================
-    if st.session_state.page == "main":
-    
-        if st.session_state.show_urine_dialog:
-            urine_dialog()
-    
-        if st.session_state.show_stool_dialog:
-            stool_dialog()
-    
-        # ↓↓↓ ここから通常の UI ↓↓↓
-        st.title("🏥 水分出納バランス記録")
+    st.title("🏥 水分出納バランス記録")
 
-    # ---- session_state 初期化 ----
-    if "u_times" not in st.session_state:
-        st.session_state.u_times = 5
-    if "u_vol" not in st.session_state:
-        st.session_state.u_vol = 250
-    if "s_vol" not in st.session_state:
-        st.session_state.s_vol = 150
-    if "show_urine_dialog" not in st.session_state:
-        st.session_state.show_urine_dialog = False
-    if "show_stool_dialog" not in st.session_state:
-        st.session_state.show_stool_dialog = False
-
-    # ---- 基本情報 ----
-    c1, c2, c3, c4, c5 = st.columns(5)
-    age = c1.number_input("年齢", 0, 120, 20)
-    weight = st.number_input(
-        "体重(kg)",
-        1.0,
-        200.0,
-        step=0.1,
-        key="weight"
-    )
-    temp = c3.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1)
-    r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5)
+    # 基本情報
+    c1,c2,c3,c4,c5 = st.columns(5)
+    age = c1.number_input("年齢",0,120,20)
+    weight = st.number_input("体重(kg)",1.0,200.0,step=0.1,key="weight")
+    temp = c3.number_input("体温(℃)",34.0,42.0,36.5,0.1)
+    r_temp = c4.number_input("室温(℃)",10.0,40.0,24.0,0.5)
     recorder = c5.text_input("記録者")
 
-    # ---- IN / OUT ----
-    col_in, col_out = st.columns(2)
-
+    # IN/OUT
+    col_in,col_out = st.columns(2)
     with col_in:
         st.markdown("### 💧 IN（摂取・流入）")
-        st.markdown("---")
-
-        oral = st.number_input("経口摂取(mL) ※酒類・カフェイン飲料を除く", 0, 10000, 1500, 50)
-        iv = st.number_input("静脈輸液(mL) ※医療機関で実施", 0, 10000, 0, 50)
-        blood = st.number_input("輸血(mL) ※医療機関で実施", 0, 5000, 0, 50)
+        oral = st.number_input("経口摂取(mL)",0,10000,1500,50)
+        iv = st.number_input("静脈輸液(mL)",0,10000,0,50)
+        blood = st.number_input("輸血(mL)",0,5000,0,50)
         metabolic = 5 * weight
 
     with col_out:
         st.markdown("### 🚻 OUT（排出・喪失）")
-        st.markdown("---")
+        st.session_state.u_times = st.number_input("排尿回数",0,20,st.session_state.u_times)
+        ucol_l, ucol_r = st.columns([3,2])
+        with ucol_l:
+            st.session_state.u_vol = st.number_input("1回尿量(mL)",0,1000,st.session_state.u_vol)
+        with ucol_r:
+            if st.button("📐 標準尿量から推算", use_container_width=True):
+                st.session_state.show_urine_dialog = True
+        bleeding = st.number_input("出血等(mL)",0,5000,0)
+        scol_l, scol_r = st.columns([3,2])
+        with scol_l:
+            st.session_state.s_vol = st.number_input("便重量(g)",0,1000,st.session_state.s_vol)
+        with scol_r:
+            if st.button("📐 標準便量から推算", use_container_width=True):
+                st.session_state.show_stool_dialog = True
+        s_type = st.selectbox("便性状",["普通","軟便","下痢"])
 
-        # 排尿回数
-        st.session_state.u_times = st.number_input(
-            "排尿回数",
-            0,
-            20,
-            st.session_state.u_times
-        )
-
-    ucol_l, ucol_r = st.columns([3, 2])
-    
-    with ucol_l:
-        st.number_input(
-            "1回尿量(mL)",
-            0,
-            1000,
-            st.session_state.u_vol,
-            key="u_vol"
-        )
-    
-    with ucol_r:
-        st.markdown("###### ")
-        if st.button("📐 標準尿量から推算", use_container_width=True):
-            st.session_state.show_urine_dialog = True
-            st.experimental_rerun()
-
-
-        s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
-
-
-    # ---- 尿量・便量の確定計算（必ず定義） ----
+    # 計算
     urine = st.session_state.u_times * st.session_state.u_vol
-
-    stool = st.session_state.s_vol * (
-        0.75 if s_type == "普通"
-        else 0.85 if s_type == "軟便"
-        else 0.95
-    )
-
-    # ---- 不感蒸泄 ----
-    insensible = 15 * weight
-    if temp > 37:
-        insensible *= (1 + 0.15 * (temp - 37))
-    if r_temp > 30:
-        insensible *= (1 + 0.175 * (r_temp - 30))
-
-    # ---- 集計 ----
-    total_in = oral + iv + blood + metabolic
-    total_out = urine + bleeding + stool + insensible
+    stool = st.session_state.s_vol * (0.75 if s_type=="普通" else 0.85 if s_type=="軟便" else 0.95)
+    insensible = 15*weight
+    if temp>37: insensible*=(1+0.15*(temp-37))
+    if r_temp>30: insensible*=(1+0.175*(r_temp-30))
+    total_in = oral+iv+blood+metabolic
+    total_out = urine+bleeding+stool+insensible
     net = total_in - total_out
+    m1,m2,m3 = st.columns(3)
+    m1.metric("総IN",f"{total_in:.0f} mL")
+    m2.metric("総OUT",f"{total_out:.0f} mL")
+    m3.metric("バランス",f"{net:+.0f} mL")
 
-    m1, m2, m3 = st.columns(3)
-    m1.metric("総IN", f"{total_in:.0f} mL")
-    m2.metric("総OUT", f"{total_out:.0f} mL")
-    m3.metric("バランス", f"{net:+.0f} mL")
+    if net>500: judg="体液過剰の傾向"; st.error(judg)
+    elif net<-200: judg="脱水リスク"; st.warning(judg)
+    else: judg="維持範囲"; st.success(judg)
 
-    # ---- 判定 ----
-    if net > 500:
-        judg = "体液過剰の傾向"
-        st.error(judg)
-    elif net < -200:
-        judg = "脱水リスク"
-        st.warning(judg)
-    else:
-        judg = "維持範囲"
-        st.success(judg)
-
-    # ---- PDF ----
     if st.button("📝 PDF生成"):
-        report_data = {
-            "age": age,
-            "weight": weight,
-            "temp": temp,
-            "room_temp": r_temp,
-            "oral": oral,
-            "iv": iv,
-            "blood": blood,
-            "metabolic": metabolic,
-            "urine": urine,
-            "bleeding": bleeding,
-            "stool": stool,
-            "insensible": insensible,
-            "net": net,
-            "judgment": judg,
-            "recorder": recorder
-        }
-
+        report_data = {"age":age,"weight":weight,"temp":temp,"room_temp":r_temp,
+                       "oral":oral,"iv":iv,"blood":blood,"metabolic":metabolic,
+                       "urine":urine,"bleeding":bleeding,"stool":stool,"insensible":insensible,
+                       "net":net,"judgment":judg,"recorder":recorder}
         pdf = generate_medical_report(report_data)
-        st.download_button("📥 ダウンロード", pdf, "fluid_balance.pdf")
+        st.download_button("📥 ダウンロード",pdf,"fluid_balance.pdf")
+
 
         stool_dialog() 
 
@@ -725,6 +522,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
