@@ -53,43 +53,102 @@ def generate_medical_report(data):
     c = canvas.Canvas(buf, pagesize=A4)
     w, h = A4
 
+    room_temp = data.get("room_temp", data.get("r_temp", 0))
+
+    # ================================
+    # タイトル
+    # ================================
     c.setFont("HeiseiMin-W3", 18)
-    c.drawCentredString(w/2, h-20*mm, "水分出納管理記録（2026）")
+    c.drawCentredString(w / 2, h - 20*mm, "水分出納管理報告書（サマリー）")
 
     c.setFont("HeiseiMin-W3", 10)
-    c.drawString(20*mm, h-30*mm, f"記録日時: {get_jst_now().strftime('%Y/%m/%d %H:%M')}")
-    c.drawString(150*mm, h-30*mm, f"記録者: {data['recorder'] or '未記入'}")
+    c.drawString(20*mm, h - 30*mm, f"記録日時：{get_jst_now().strftime('%Y/%m/%d %H:%M')}")
+    c.drawRightString(w - 20*mm, h - 30*mm, f"記録者：{data.get('recorder','未記入')}")
 
     y = h - 45*mm
-    c.setFont("HeiseiMin-W3", 12)
+
+    # ================================
+    # 基本情報
+    # ================================
+    c.setFont("HeiseiMin-W3", 13)
     c.drawString(20*mm, y, "【基本情報】")
     y -= 8*mm
 
     c.setFont("HeiseiMin-W3", 10)
     c.drawString(
         25*mm, y,
-        f"年齢:{data['age']}歳 体重:{data['weight']:.1f}kg "
-        f"体温:{data['temp']:.1f}℃ 室温:{data['room_temp']:.1f}℃"
+        f"年齢：{data['age']} 歳　"
+        f"体重：{data['weight']:.1f} kg　"
+        f"体温：{data['temp']:.1f} ℃　"
+        f"室温：{room_temp:.1f} ℃"
     )
 
     y -= 12*mm
-    c.drawString(20*mm, y, "【入出量】")
+
+    # ================================
+    # 入出量 対照表
+    # ================================
+    c.setFont("HeiseiMin-W3", 13)
+    c.drawString(20*mm, y, "【水分出納（24時間）】")
     y -= 8*mm
-    c.drawString(25*mm, y, f"IN: 経口{data['oral']} 輸液{data['iv']} 輸血{data['blood']} 代謝水{data['metabolic']:.0f}")
+
+    c.setFont("HeiseiMin-W3", 10)
+
+    # IN
+    c.drawString(25*mm, y, "＜IN＞")
     y -= 6*mm
-    c.drawString(25*mm, y, f"OUT: 尿{data['urine']} 出血{data['bleeding']} 便{data['stool']:.0f} 不感蒸泄{data['insensible']:.0f}")
+    c.drawString(30*mm, y, f"経口摂取：{data['oral']} mL")
+    y -= 5*mm
+    c.drawString(30*mm, y, f"静脈輸液：{data['iv']} mL")
+    y -= 5*mm
+    c.drawString(30*mm, y, f"輸血：{data['blood']} mL")
+    y -= 5*mm
+    c.drawString(30*mm, y, f"代謝水：{data['metabolic']:.0f} mL")
+
+    y -= 8*mm
+
+    # OUT
+    c.drawString(25*mm, y, "＜OUT＞")
+    y -= 6*mm
+    c.drawString(30*mm, y, f"尿量：{data['urine']} mL")
+    y -= 5*mm
+    c.drawString(30*mm, y, f"出血等：{data['bleeding']} mL")
+    y -= 5*mm
+    c.drawString(30*mm, y, f"便中水分：{data['stool']:.0f} mL")
+    y -= 5*mm
+    c.drawString(30*mm, y, f"不感蒸泄：{data['insensible']:.0f} mL")
 
     y -= 12*mm
-    c.setFont("HeiseiMin-W3", 13)
-    c.drawString(20*mm, y, f"ネットバランス: {data['net']:+.0f} mL/day")
+
+    # ================================
+    # サマリー判定
+    # ================================
+    c.setFont("HeiseiMin-W3", 14)
+    c.drawString(20*mm, y, f"ネットバランス： {data['net']:+.0f} mL / day")
     y -= 8*mm
-    c.setFont("HeiseiMin-W3", 11)
-    c.drawString(20*mm, y, f"判定: {data['judgment']}")
+
+    c.setFont("HeiseiMin-W3", 12)
+    c.drawString(20*mm, y, f"判定： {data['judgment']}")
+
+    y -= 12*mm
+
+    # ================================
+    # 注意事項（医療文書として重要）
+    # ================================
+    c.setFont("HeiseiMin-W3", 9)
+    c.drawString(20*mm, y, "【注意】")
+    y -= 5*mm
+    c.drawString(
+        20*mm, y,
+        "本報告書は水分出納管理の補助を目的としたものであり、"
+        "最終的な臨床判断は身体所見・検査値等を踏まえて医師が行ってください。"
+    )
 
     c.showPage()
     c.save()
     buf.seek(0)
     return buf
+
 
 # ================================
 # 3. ページ状態管理
@@ -297,6 +356,7 @@ elif st.session_state.page == "refs":
     **臨床現場での利用にあたって**  
     2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
     """)
+
 
 
 
