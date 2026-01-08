@@ -49,17 +49,14 @@ except:
     pass
 
 def generate_medical_report(data):
+    from reportlab.platypus import Table, TableStyle
+    from reportlab.lib import colors
+
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     w, h = A4
 
     room_temp = data.get("room_temp", data.get("r_temp", 0))
-
-    # ================================
-    # 行間制御用ユーティリティ
-    # ================================
-    def line_space(font_size, ratio=1.4):
-        return font_size * ratio * mm / 2.8  # pt→mm 補正
 
     # ================================
     # タイトル
@@ -78,29 +75,38 @@ def generate_medical_report(data):
     # ================================
     c.setFont("HeiseiMin-W3", 12)
     c.drawString(20 * mm, y, "【基本情報】")
-    y -= line_space(12, 1.2)
+    y -= 6 * mm
 
     c.setFont("HeiseiMin-W3", 10)
-    for text in [
-        f"・年齢：{data['age']} 歳",
-        f"・体重：{data['weight']:.1f} kg",
-        f"・体温：{data['temp']:.1f} ℃",
-        f"・室温：{room_temp:.1f} ℃",
-    ]:
-        c.drawString(25 * mm, y, text)
-        y -= line_space(10)
+    c.drawString(25 * mm, y, f"・年齢：{data['age']} 歳")
+    y -= 5 * mm
+    c.drawString(25 * mm, y, f"・体重：{data['weight']:.1f} kg")
+    y -= 5 * mm
+    c.drawString(25 * mm, y, f"・体温：{data['temp']:.1f} ℃")
+    y -= 5 * mm
+    c.drawString(25 * mm, y, f"・室温：{room_temp:.1f} ℃")
 
-    y -= line_space(10, 0.8)
+    y -= 8 * mm
 
     # ================================
-    # 【入出量内訳】（最小罫線対照表）
+    # 【入出量内訳】（IN/OUT 横並び・合計行付き）
     # ================================
     c.setFont("HeiseiMin-W3", 12)
     c.drawString(20 * mm, y, "【入出量内訳】")
-    y -= line_space(12, 0.8)
+    y -= 6 * mm
 
-    from reportlab.platypus import Table, TableStyle
-    from reportlab.lib import colors
+    total_in = (
+        data["oral"]
+        + data["iv"]
+        + data["blood"]
+        + data["metabolic"]
+    )
+    total_out = (
+        data["urine"]
+        + data["bleeding"]
+        + data["stool"]
+        + data["insensible"]
+    )
 
     io_table = Table(
         [
@@ -109,50 +115,62 @@ def generate_medical_report(data):
             ["静脈輸液", f"{data['iv']} mL", "出血等", f"{data['bleeding']} mL"],
             ["輸血", f"{data['blood']} mL", "便中水分", f"{data['stool']:.0f} mL"],
             ["代謝水", f"{data['metabolic']:.0f} mL", "不感蒸泄", f"{data['insensible']:.0f} mL"],
+            ["合計", f"{total_in:.0f} mL", "合計", f"{total_out:.0f} mL"],
         ],
         colWidths=[38 * mm, 32 * mm, 38 * mm, 32 * mm]
     )
 
     io_table.setStyle(TableStyle([
-        # 上下罫線のみ
+        # 見出し上下罫線
         ("LINEABOVE", (0, 0), (-1, 0), 0.8, colors.black),
+
+        # 合計行の強調（上罫線＋下罫線）
+        ("LINEABOVE", (0, -1), (-1, -1), 0.8, colors.black),
         ("LINEBELOW", (0, -1), (-1, -1), 0.8, colors.black),
 
-        # IN / OUT 区切り縦線
+        # IN / OUT 境界線
         ("LINEBEFORE", (2, 0), (2, -1), 0.8, colors.black),
 
-        # 見出し
+        # フォント
         ("FONT", (0, 0), (-1, 0), "HeiseiMin-W3", 10),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        ("FONT", (0, 1), (-1, -2), "HeiseiMin-W3", 10),
+        ("FONT", (0, -1), (-1, -1), "HeiseiMin-W3", 10),
 
-        # 数値右寄せ
+        # 配置
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
         ("ALIGN", (1, 1), (1, -1), "RIGHT"),
         ("ALIGN", (3, 1), (3, -1), "RIGHT"),
-
-        ("FONT", (0, 1), (-1, -1), "HeiseiMin-W3", 10),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
 
-    table_height = 42 * mm
-    io_table.wrapOn(c, w, h)
+    table_width, table_height = io_table.wrap(w - 40 * mm, h)
     io_table.drawOn(c, 20 * mm, y - table_height)
-
-    y -= table_height + line_space(10, 1.0)
+    y -= table_height + 10 * mm
 
     # ================================
-    # 【判定】
+    # 【判定】（薄いグレー帯）
     # ================================
+    band_height = 14 * mm
+    c.setFillColor(colors.whitesmoke)
+    c.rect(20 * mm, y - band_height, w - 40 * mm, band_height, fill=1, stroke=0)
+
+    c.setFillColor(colors.black)
     c.setFont("HeiseiMin-W3", 12)
-    c.drawString(20 * mm, y, "【判定】")
-    y -= line_space(12)
+    c.drawString(22 * mm, y - 5 * mm, "【判定】")
 
     c.setFont("HeiseiMin-W3", 14)
-    c.drawString(25 * mm, y, f"ネットバランス： {data['net']:+.0f} mL / day")
-    y -= line_space(14, 0.9)
+    c.drawRightString(
+        w - 22 * mm,
+        y - 5 * mm,
+        f"ネットバランス： {data['net']:+.0f} mL / day"
+    )
+
+    y -= band_height + 4 * mm
 
     c.setFont("HeiseiMin-W3", 11)
     c.drawString(25 * mm, y, f"評価： {data['judgment']}")
-    y -= line_space(11, 1.2)
+
+    y -= 10 * mm
 
     # ================================
     # 注意書き
@@ -424,6 +442,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
