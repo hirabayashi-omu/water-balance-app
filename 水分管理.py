@@ -65,38 +65,36 @@ def generate_medical_report(data):
     c.drawString(20*mm, h-30*mm, f"記録日時：{get_jst_now().strftime('%Y/%m/%d %H:%M')}")
     c.drawRightString(w-20*mm, h-30*mm, f"記録者：{data.get('recorder','未記入')}")
 
-    y = h - 45*mm
+    y = h - 42*mm
 
     # ================================
-    # 基本情報（罫線付き）
+    # 【基本情報】（箇条書き）
     # ================================
+    c.setFont("HeiseiMin-W3", 12)
+    c.drawString(20*mm, y, "【基本情報】")
+    y -= 6*mm
+
+    c.setFont("HeiseiMin-W3", 10)
+    c.drawString(25*mm, y, f"・年齢：{data['age']} 歳")
+    y -= 5*mm
+    c.drawString(25*mm, y, f"・体重：{data['weight']:.1f} kg")
+    y -= 5*mm
+    c.drawString(25*mm, y, f"・体温：{data['temp']:.1f} ℃")
+    y -= 5*mm
+    c.drawString(25*mm, y, f"・室温：{room_temp:.1f} ℃")
+
+    y -= 8*mm
+
+    # ================================
+    # 【入出量内訳】（最小罫線対照表）
+    # ================================
+    c.setFont("HeiseiMin-W3", 12)
+    c.drawString(20*mm, y, "【入出量内訳】")
+    y -= 6*mm
+
     from reportlab.platypus import Table, TableStyle
     from reportlab.lib import colors
 
-    basic_table = Table(
-        [
-            ["年齢", f"{data['age']} 歳", "体重", f"{data['weight']:.1f} kg"],
-            ["体温", f"{data['temp']:.1f} ℃", "室温", f"{room_temp:.1f} ℃"],
-        ],
-        colWidths=[30*mm, 40*mm, 30*mm, 40*mm]
-    )
-
-    basic_table.setStyle(TableStyle([
-        ("GRID", (0,0), (-1,-1), 0.8, colors.black),
-        ("BACKGROUND", (0,0), (-1,0), colors.whitesmoke),
-        ("FONT", (0,0), (-1,-1), "HeiseiMin-W3", 10),
-        ("ALIGN", (0,0), (-1,-1), "CENTER"),
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-    ]))
-
-    basic_table.wrapOn(c, w, h)
-    basic_table.drawOn(c, 20*mm, y-25*mm)
-
-    y -= 40*mm
-
-    # ================================
-    # IN / OUT 対照表（横並び）
-    # ================================
     io_table = Table(
         [
             ["IN（流入）", "", "OUT（流出）", ""],
@@ -105,45 +103,57 @@ def generate_medical_report(data):
             ["輸血", f"{data['blood']} mL", "便中水分", f"{data['stool']:.0f} mL"],
             ["代謝水", f"{data['metabolic']:.0f} mL", "不感蒸泄", f"{data['insensible']:.0f} mL"],
         ],
-        colWidths=[35*mm, 35*mm, 35*mm, 35*mm]
+        colWidths=[38*mm, 32*mm, 38*mm, 32*mm]
     )
 
     io_table.setStyle(TableStyle([
-        ("GRID", (0,0), (-1,-1), 0.8, colors.black),
-        ("SPAN", (0,0), (1,0)),
-        ("SPAN", (2,0), (3,0)),
-        ("BACKGROUND", (0,0), (1,0), colors.lightgrey),
-        ("BACKGROUND", (2,0), (3,0), colors.lightgrey),
-        ("FONT", (0,0), (-1,-1), "HeiseiMin-W3", 10),
-        ("ALIGN", (1,1), (-1,-1), "RIGHT"),
+        # 上下罫線のみ
+        ("LINEABOVE", (0,0), (-1,0), 0.8, colors.black),
+        ("LINEBELOW", (0,-1), (-1,-1), 0.8, colors.black),
+
+        # IN / OUT 区切り縦線
+        ("LINEBEFORE", (2,0), (2,-1), 0.8, colors.black),
+
+        # 見出し強調
+        ("FONT", (0,0), (-1,0), "HeiseiMin-W3", 10),
         ("ALIGN", (0,0), (-1,0), "CENTER"),
+
+        # 数値右寄せ
+        ("ALIGN", (1,1), (1,-1), "RIGHT"),
+        ("ALIGN", (3,1), (3,-1), "RIGHT"),
+
+        ("FONT", (0,1), (-1,-1), "HeiseiMin-W3", 10),
         ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
     ]))
 
     io_table.wrapOn(c, w, h)
-    io_table.drawOn(c, 20*mm, y-70*mm)
+    io_table.drawOn(c, 20*mm, y-48*mm)
 
-    y -= 85*mm
+    y -= 55*mm
 
     # ================================
-    # 判定サマリー
+    # 【判定】
     # ================================
-    c.setFont("HeiseiMin-W3", 14)
-    c.drawString(20*mm, y, f"ネットバランス： {data['net']:+.0f} mL / day")
-    y -= 8*mm
-
     c.setFont("HeiseiMin-W3", 12)
-    c.drawString(20*mm, y, f"判定： {data['judgment']}")
+    c.drawString(20*mm, y, "【判定】")
+    y -= 6*mm
 
-    y -= 12*mm
+    c.setFont("HeiseiMin-W3", 14)
+    c.drawString(25*mm, y, f"ネットバランス： {data['net']:+.0f} mL / day")
+    y -= 7*mm
+
+    c.setFont("HeiseiMin-W3", 11)
+    c.drawString(25*mm, y, f"評価： {data['judgment']}")
+
+    y -= 10*mm
 
     # ================================
-    # 注意書き（医療文書必須）
+    # 注意書き
     # ================================
     c.setFont("HeiseiMin-W3", 9)
     c.drawString(
         20*mm, y,
-        "【注意】本報告書は水分出納管理の補助を目的としたものであり、"
+        "※本報告書は水分出納管理の補助を目的としたものであり、"
         "最終的な臨床判断は医師が行ってください。"
     )
 
@@ -359,6 +369,7 @@ elif st.session_state.page == "refs":
     **臨床現場での利用にあたって**  
     2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
     """)
+
 
 
 
