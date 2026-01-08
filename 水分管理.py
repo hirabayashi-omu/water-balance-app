@@ -59,69 +59,74 @@ def generate_medical_report(data):
     # タイトル
     # ================================
     c.setFont("HeiseiMin-W3", 18)
-    c.drawCentredString(w / 2, h - 20*mm, "水分出納管理報告書（サマリー）")
+    c.drawCentredString(w/2, h-20*mm, "水分出納管理報告書（サマリー）")
 
     c.setFont("HeiseiMin-W3", 10)
-    c.drawString(20*mm, h - 30*mm, f"記録日時：{get_jst_now().strftime('%Y/%m/%d %H:%M')}")
-    c.drawRightString(w - 20*mm, h - 30*mm, f"記録者：{data.get('recorder','未記入')}")
+    c.drawString(20*mm, h-30*mm, f"記録日時：{get_jst_now().strftime('%Y/%m/%d %H:%M')}")
+    c.drawRightString(w-20*mm, h-30*mm, f"記録者：{data.get('recorder','未記入')}")
 
     y = h - 45*mm
 
     # ================================
-    # 基本情報
+    # 基本情報（罫線付き）
     # ================================
-    c.setFont("HeiseiMin-W3", 13)
-    c.drawString(20*mm, y, "【基本情報】")
-    y -= 8*mm
+    from reportlab.platypus import Table, TableStyle
+    from reportlab.lib import colors
 
-    c.setFont("HeiseiMin-W3", 10)
-    c.drawString(
-        25*mm, y,
-        f"年齢：{data['age']} 歳　"
-        f"体重：{data['weight']:.1f} kg　"
-        f"体温：{data['temp']:.1f} ℃　"
-        f"室温：{room_temp:.1f} ℃"
+    basic_table = Table(
+        [
+            ["年齢", f"{data['age']} 歳", "体重", f"{data['weight']:.1f} kg"],
+            ["体温", f"{data['temp']:.1f} ℃", "室温", f"{room_temp:.1f} ℃"],
+        ],
+        colWidths=[30*mm, 40*mm, 30*mm, 40*mm]
     )
 
-    y -= 12*mm
+    basic_table.setStyle(TableStyle([
+        ("GRID", (0,0), (-1,-1), 0.8, colors.black),
+        ("BACKGROUND", (0,0), (-1,0), colors.whitesmoke),
+        ("FONT", (0,0), (-1,-1), "HeiseiMin-W3", 10),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+    ]))
+
+    basic_table.wrapOn(c, w, h)
+    basic_table.drawOn(c, 20*mm, y-25*mm)
+
+    y -= 40*mm
 
     # ================================
-    # 入出量 対照表
+    # IN / OUT 対照表（横並び）
     # ================================
-    c.setFont("HeiseiMin-W3", 13)
-    c.drawString(20*mm, y, "【水分出納（24時間）】")
-    y -= 8*mm
+    io_table = Table(
+        [
+            ["IN（流入）", "", "OUT（流出）", ""],
+            ["経口摂取", f"{data['oral']} mL", "尿量", f"{data['urine']} mL"],
+            ["静脈輸液", f"{data['iv']} mL", "出血等", f"{data['bleeding']} mL"],
+            ["輸血", f"{data['blood']} mL", "便中水分", f"{data['stool']:.0f} mL"],
+            ["代謝水", f"{data['metabolic']:.0f} mL", "不感蒸泄", f"{data['insensible']:.0f} mL"],
+        ],
+        colWidths=[35*mm, 35*mm, 35*mm, 35*mm]
+    )
 
-    c.setFont("HeiseiMin-W3", 10)
+    io_table.setStyle(TableStyle([
+        ("GRID", (0,0), (-1,-1), 0.8, colors.black),
+        ("SPAN", (0,0), (1,0)),
+        ("SPAN", (2,0), (3,0)),
+        ("BACKGROUND", (0,0), (1,0), colors.lightgrey),
+        ("BACKGROUND", (2,0), (3,0), colors.lightgrey),
+        ("FONT", (0,0), (-1,-1), "HeiseiMin-W3", 10),
+        ("ALIGN", (1,1), (-1,-1), "RIGHT"),
+        ("ALIGN", (0,0), (-1,0), "CENTER"),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+    ]))
 
-    # IN
-    c.drawString(25*mm, y, "＜IN＞")
-    y -= 6*mm
-    c.drawString(30*mm, y, f"経口摂取：{data['oral']} mL")
-    y -= 5*mm
-    c.drawString(30*mm, y, f"静脈輸液：{data['iv']} mL")
-    y -= 5*mm
-    c.drawString(30*mm, y, f"輸血：{data['blood']} mL")
-    y -= 5*mm
-    c.drawString(30*mm, y, f"代謝水：{data['metabolic']:.0f} mL")
+    io_table.wrapOn(c, w, h)
+    io_table.drawOn(c, 20*mm, y-70*mm)
 
-    y -= 8*mm
-
-    # OUT
-    c.drawString(25*mm, y, "＜OUT＞")
-    y -= 6*mm
-    c.drawString(30*mm, y, f"尿量：{data['urine']} mL")
-    y -= 5*mm
-    c.drawString(30*mm, y, f"出血等：{data['bleeding']} mL")
-    y -= 5*mm
-    c.drawString(30*mm, y, f"便中水分：{data['stool']:.0f} mL")
-    y -= 5*mm
-    c.drawString(30*mm, y, f"不感蒸泄：{data['insensible']:.0f} mL")
-
-    y -= 12*mm
+    y -= 85*mm
 
     # ================================
-    # サマリー判定
+    # 判定サマリー
     # ================================
     c.setFont("HeiseiMin-W3", 14)
     c.drawString(20*mm, y, f"ネットバランス： {data['net']:+.0f} mL / day")
@@ -133,15 +138,13 @@ def generate_medical_report(data):
     y -= 12*mm
 
     # ================================
-    # 注意事項（医療文書として重要）
+    # 注意書き（医療文書必須）
     # ================================
     c.setFont("HeiseiMin-W3", 9)
-    c.drawString(20*mm, y, "【注意】")
-    y -= 5*mm
     c.drawString(
         20*mm, y,
-        "本報告書は水分出納管理の補助を目的としたものであり、"
-        "最終的な臨床判断は身体所見・検査値等を踏まえて医師が行ってください。"
+        "【注意】本報告書は水分出納管理の補助を目的としたものであり、"
+        "最終的な臨床判断は医師が行ってください。"
     )
 
     c.showPage()
@@ -356,6 +359,7 @@ elif st.session_state.page == "refs":
     **臨床現場での利用にあたって**  
     2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
     """)
+
 
 
 
