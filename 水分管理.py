@@ -371,168 +371,138 @@ if st.session_state.page == "main":
     if "show_stool_dialog" not in st.session_state:
         st.session_state.show_stool_dialog = False
 
-    # ---- 基本情報 ----
-    c1, c2, c3, c4, c5 = st.columns(5)
-    age = c1.number_input("年齢", 0, 120, 20)
-    weight = st.number_input(
-        "体重(kg)",
-        1.0,
-        200.0,
-        step=0.1,
-        key="weight"
-    )
-    temp = c3.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1)
-    r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5)
-    recorder = c5.text_input("記録者")
+# ================================
+# 5. メイン計算ページ
+# ================================
+if st.session_state.page == "main":
+    st.title("🏥 水分出納バランス記録")
 
-    # ---- IN / OUT ----
+    # --- NameError防止用の初期化 ---
+    bleeding = 0
+    oral = 1500
+    iv = 0
+    blood = 0
+    # 体重の初期同期
+    weight = st.session_state.get("weight", 60.0)
+    metabolic = 5.0 * weight
+
+    # ---- 基本情報入力 ----
+    st.markdown('<div class="report-header-box"><h4>📋 基本パラメータ設定</h4></div>', unsafe_allow_html=True)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    
+    # 全てのウィジェットに unique な key を付与して重複エラーを回避
+    age = c1.number_input("年齢", 0, 120, 20, key="main_age")
+    weight = c2.number_input("体重(kg)", 1.0, 200.0, value=st.session_state.weight, step=0.1, key="main_weight")
+    st.session_state.weight = weight # 常に最新の体重をセッションに保存
+    
+    temp = c3.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1, key="main_temp")
+    r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5, key="main_rtemp")
+    recorder = c5.text_input("記録者", value=st.session_state.recorder, key="main_recorder")
+    st.session_state.recorder = recorder
+
+    # ---- IN / OUT 入力エリア ----
     col_in, col_out = st.columns(2)
 
     with col_in:
-        st.markdown("### 💧 IN（摂取・流入）")
-        st.markdown("---")
-
-        oral = st.number_input("経口摂取(mL) ※酒類・カフェイン飲料を除く", 0, 10000, 1500, 50)
-        iv = st.number_input("静脈輸液(mL) ※医療機関で実施", 0, 10000, 0, 50)
-        blood = st.number_input("輸血(mL) ※医療機関で実施", 0, 5000, 0, 50)
-        metabolic = 5 * weight
+        st.markdown('<p class="section-header">📥 IN (摂取・流入)</p>', unsafe_allow_html=True)
+        st.divider()
+        oral = st.number_input("経口摂取(mL) ※代謝水除く", 0, 10000, 1500, 50, key="main_oral")
+        iv = st.number_input("静脈輸液(mL)", 0, 10000, 0, 50, key="main_iv")
+        blood = st.number_input("輸血(mL)", 0, 5000, 0, 50, key="main_blood")
+        metabolic = 5.0 * weight
+        st.caption(f"（自動算出）代謝水: {metabolic:.0f} mL")
 
     with col_out:
-        st.markdown("### 🚻 OUT（排出・喪失）")
-        st.markdown("---")
-
+        st.markdown('<p class="section-header">📤 OUT (排出・喪失)</p>', unsafe_allow_html=True)
+        st.divider()
+        
         # 排尿回数
-        st.session_state.u_times = st.number_input(
-            "排尿回数",
-            0,
-            20,
-            st.session_state.u_times
+        u_times = st.number_input("排尿回数", 0, 20, value=st.session_state.u_times, key="main_utimes")
+        st.session_state.u_times = u_times
+
+        # --- 尿量セクション ---
+        ucol_l, ucol_r = st.columns([3, 2])
+        with ucol_l:
+            u_vol_val = st.number_input("1回尿量(mL)", 0, 1000, value=st.session_state.u_vol, key="main_uvol")
+            st.session_state.u_vol = u_vol_val
+        with ucol_r:
+            st.write(" ")
+            st.markdown("###### ")
+            if st.button("📐 標準尿量推算", use_container_width=True, key="btn_u_dialog"):
+                urine_dialog()
+
+        # その他流出
+        bleeding = st.number_input("出血・ドレーン等(mL)", 0, 5000, 0, key="main_bleeding")
+
+        # --- 便量セクション ---
+        scol_l, scol_r = st.columns([3, 2])
+        with scol_l:
+            s_vol_val = st.number_input("便重量(g)", 0, 1000, value=st.session_state.s_vol, key="main_svol")
+            st.session_state.s_vol = s_vol_val
+        with scol_r:
+            st.write(" ")
+            st.markdown("###### ")
+            if st.button("📐 標準便量推算", use_container_width=True, key="btn_s_dialog"):
+                stool_dialog()
+
+        s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"], key="main_stype")
+
+    # ---- 確定計算ロジック ----
+    urine_total = st.session_state.u_times * st.session_state.u_vol
+    
+    # 便中水分の係数
+    stool_factor = 0.75 if s_type == "普通" else 0.85 if s_type == "軟便" else 0.95
+    stool_total = st.session_state.s_vol * stool_factor
+
+    # 不感蒸泄（2026年補正基準：体重15ml + 体温・室温補正）
+    insensible = 15.0 * weight
+    if temp > 37.0:
+        insensible *= (1 + 0.15 * (temp - 37.0))
+    if r_temp > 30.0:
+        insensible *= (1 + 0.175 * (r_temp - 30.0))
+
+    # 合計集計
+    total_in = oral + iv + blood + metabolic
+    total_out = urine_total + bleeding + stool_total + insensible
+    net_balance = total_in - total_out
+
+    # ---- 結果表示エリア ----
+    st.divider()
+    m1, m2, m3 = st.columns(3)
+    m1.metric("総流入 (IN)", f"{total_in:.0f} mL")
+    m2.metric("総流出 (OUT)", f"{total_out:.0f} mL")
+    m3.metric("バランス", f"{net_balance:+.0f} mL")
+
+    # 判定表示
+    if net_balance > 500:
+        st.error(f"判定：体液過剰の傾向")
+        judg = "体液過剰の傾向"
+    elif net_balance < -200:
+        st.warning(f"判定：脱水リスク")
+        judg = "脱水リスク"
+    else:
+        st.success(f"判定：維持範囲")
+        judg = "維持範囲"
+
+    # ---- PDFレポート生成 ----
+    st.markdown("---")
+    if st.button("📄 PDFレポートを生成・保存", use_container_width=True, key="btn_pdf_gen"):
+        report_data = {
+            "age": age, "weight": weight, "temp": temp, "room_temp": r_temp,
+            "oral": oral, "iv": iv, "blood": blood, "metabolic": metabolic,
+            "urine": urine_total, "bleeding": bleeding, "stool": stool_total,
+            "insensible": insensible, "net": net_balance, "judgment": judg,
+            "recorder": recorder
+        }
+        pdf_buf = generate_medical_report(report_data)
+        st.download_button(
+            label="📥 PDFをダウンロード",
+            data=pdf_buf,
+            file_name=f"FluidBalance_{get_jst_now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf",
+            key="btn_pdf_download"
         )
 
-        # ================================
-        # 5. メイン計算ページ
-        # ================================
-        if st.session_state.page == "main":
-            st.title("🏥 水分出納バランス記録")
-        
-            # --- NameError防止用の初期化 ---
-            # 計算に使用する全ての変数にデフォルト値を設定します
-            bleeding = 0
-            oral = 1500
-            iv = 0
-            blood = 0
-            metabolic = 5.0 * st.session_state.weight
-        
-            # ---- 基本情報入力 ----
-            c1, c2, c3, c4, c5 = st.columns(5)
-            age = c1.number_input("年齢", 0, 120, 20)
-            weight = c2.number_input("体重(kg)", 1.0, 200.0, value=st.session_state.weight, step=0.1)
-            st.session_state.weight = weight # 最新値をセッションに同期
-            
-            temp = c3.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1)
-            r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5)
-            recorder = c5.text_input("記録者", value=st.session_state.recorder)
-            st.session_state.recorder = recorder
-        
-            # ---- IN / OUT 入力エリア ----
-            col_in, col_out = st.columns(2)
-        
-            with col_in:
-                st.markdown("### 💧 IN（摂取・流入）")
-                st.divider()
-                oral = st.number_input("経口摂取(mL)", 0, 10000, 1500, 50)
-                iv = st.number_input("静脈輸液(mL)", 0, 10000, 0, 50)
-                blood = st.number_input("輸血(mL)", 0, 5000, 0, 50)
-                metabolic = 5 * weight
-        
-            with col_out:
-                st.markdown("### 🚻 OUT（排出・喪失）")
-                st.divider()
-                
-                # 排尿回数
-                st.session_state.u_times = st.number_input("排尿回数", 0, 20, st.session_state.u_times)
-        
-                # --- 尿量セクション（修正版） ---
-                ucol_l, ucol_r = st.columns([3, 2])
-                with ucol_l:
-                    # セッション値を反映させつつ入力を受け付ける
-                    u_vol_val = st.number_input("1回尿量(mL)", 0, 1000, value=st.session_state.u_vol, key="u_vol_widget")
-                    st.session_state.u_vol = u_vol_val
-                with ucol_r:
-                    st.write(" ") # ラベルとの高さ調整用
-                    st.markdown(" ")
-                    if st.button("📐 標準尿量推算", use_container_width=True, key="btn_u"):
-                        urine_dialog() # 直接呼び出し
-        
-                # その他流出
-                bleeding = st.number_input("出血・ドレーン等(mL)", 0, 5000, 0)
-        
-                # --- 便量セクション（修正版） ---
-                scol_l, scol_r = st.columns([3, 2])
-                with scol_l:
-                    s_vol_val = st.number_input("便重量(g)", 0, 1000, value=st.session_state.s_vol, key="s_vol_widget")
-                    st.session_state.s_vol = s_vol_val
-                with scol_r:
-                    st.write(" ")
-                    st.markdown(" ")
-                    if st.button("📐 標準便量推算", use_container_width=True, key="btn_s"):
-                        stool_dialog() # 直接呼び出し
-        
-                s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
-        
-            # ---- 確定計算ロジック（NameErrorが起きない位置） ----
-            urine_total = st.session_state.u_times * st.session_state.u_vol
-        
-            # 便中水分の係数計算
-            stool_factor = 0.75 if s_type == "普通" else 0.85 if s_type == "軟便" else 0.95
-            stool_total = st.session_state.s_vol * stool_factor
-        
-            # 不感蒸泄（体温・室温補正）
-            insensible = 15 * weight
-            if temp > 37.0:
-                insensible *= (1 + 0.15 * (temp - 37.0))
-            if r_temp > 30.0:
-                insensible *= (1 + 0.175 * (r_temp - 30.0))
-        
-            # 合計集計
-            total_in = oral + iv + blood + metabolic
-            total_out = urine_total + bleeding + stool_total + insensible
-            net_balance = total_in - total_out
-        
-            # ---- 結果表示エリア ----
-            st.divider()
-            m1, m2, m3 = st.columns(3)
-            m1.metric("総流入 (IN)", f"{total_in:.0f} mL")
-            m2.metric("総流出 (OUT)", f"{total_out:.0f} mL")
-            m3.metric("ネットバランス", f"{net_balance:+.0f} mL", delta_color="normal")
-        
-            # 判定表示
-            if net_balance > 500:
-                st.error(f"判定：体液過剰の傾向 ({net_balance:+.0f} mL)")
-                judg = "体液過剰の傾向"
-            elif net_balance < -200:
-                st.warning(f"判定：脱水リスク ({net_balance:+.0f} mL)")
-                judg = "脱水リスク"
-            else:
-                st.success(f"判定：維持範囲 ({net_balance:+.0f} mL)")
-                judg = "維持範囲"
-        
-            # ---- PDFレポート生成 ----
-            if st.button("📄 PDFレポートを生成・保存", use_container_width=True):
-                report_data = {
-                    "age": age, "weight": weight, "temp": temp, "room_temp": r_temp,
-                    "oral": oral, "iv": iv, "blood": blood, "metabolic": metabolic,
-                    "urine": urine_total, "bleeding": bleeding, "stool": stool_total,
-                    "insensible": insensible, "net": net_balance, "judgment": judg,
-                    "recorder": recorder
-                }
-                pdf_buf = generate_medical_report(report_data)
-                st.download_button(
-                    label="📥 PDFをダウンロード",
-                    data=pdf_buf,
-                    file_name=f"FluidBalance_{get_jst_now().strftime('%Y%m%d')}.pdf",
-                    mime="application/pdf"
-                )
 
 
     # ---- 尿量・便量の確定計算（必ず定義） ----
@@ -836,6 +806,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
