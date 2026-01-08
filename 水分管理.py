@@ -21,6 +21,32 @@ def get_jst_now():
 # ================================
 st.set_page_config(page_title="水分出納管理システム", layout="wide")
 
+st.markdown("""
+<style>
+/* IN / OUT 見出し専用（ダークモード完全対応） */
+.section-header {
+    background-color: rgba(30, 30, 30, 0.85);
+    color: #F5F5F5 !important;
+    padding: 0.6em 0.8em;
+    border-radius: 0.6em;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.25);
+}
+
+/* ライトモード補正 */
+@media (prefers-color-scheme: light) {
+    .section-header {
+        background-color: #F1F3F6;
+        color: #111111 !important;
+        border: 1px solid #D0D4DA;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # ================================
 # session_state 初期化（必須）
 # ================================
@@ -703,5 +729,6 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
