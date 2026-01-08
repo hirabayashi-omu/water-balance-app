@@ -459,7 +459,7 @@ if st.session_state.page == "main":
                 st.session_state.show_stool_dialog = False
                 st.rerun()
 
-
+        stool_dialog() 
 
 
 # ================================
@@ -613,6 +613,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
