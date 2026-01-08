@@ -253,24 +253,30 @@ if st.session_state.page == "main":
             20,
             st.session_state.u_times
         )
-
-        u_vol = st.number_input(
-            "1回尿量(mL)",
-            0,
-            1000,
-            st.session_state.u_vol
-        )
-
+    
+        # ★ 横並び：1回尿量（左）／推算ボタン（右）
+        ucol_l, ucol_r = st.columns([3, 2])
+    
+        with ucol_l:
+            u_vol = st.number_input(
+                "1回尿量(mL)",
+                0,
+                1000,
+                st.session_state.u_vol
+            )
+    
+        with ucol_r:
+            st.markdown("###### ")  # 高さ合わせ（レイアウト安定用）
+            if st.button("📐 標準尿量から推算", use_container_width=True):
+                st.session_state.show_urine_dialog = True
+    
         urine = u_times * u_vol
-
-        # ★ 追加：尿量推算ボタン（配置のみ追加）
-        if st.button("📐 標準尿量から推算"):
-            st.session_state.show_urine_dialog = True
-
+    
         bleeding = st.number_input("出血等(mL)", 0, 5000, 0)
         s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
         s_vol = st.number_input("便重量(g)", 0, 1000, 150)
         stool = s_vol * (0.75 if s_type == "普通" else 0.85 if s_type == "軟便" else 0.95)
+
 
     # ---- 不感蒸泄 ----
     insensible = 15 * weight
@@ -518,6 +524,7 @@ elif st.session_state.page == "usage":
 
     st.subheader("📋 利用シーン別一覧")
     st.table(usage_table)
+
 
 
 
