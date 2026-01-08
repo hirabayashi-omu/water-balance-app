@@ -90,7 +90,7 @@ def generate_medical_report(data):
     # ================================
     c.setFont("HeiseiMin-W3", 12)
     c.drawString(20*mm, y, "【入出量内訳】")
-    y -= 3*mm
+    y -= 0*mm
 
     from reportlab.platypus import Table, TableStyle
     from reportlab.lib import colors
@@ -368,6 +368,7 @@ elif st.session_state.page == "refs":
     **臨床現場での利用にあたって**  
     2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
     """)
+
 
 
 
