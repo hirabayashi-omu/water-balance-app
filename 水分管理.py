@@ -1,6 +1,5 @@
 import streamlit as st
 import datetime
-import pandas as pd
 from io import BytesIO
 
 # PDF生成用
@@ -18,14 +17,13 @@ st.set_page_config(page_title="水分出納管理システム", layout="wide")
 
 st.markdown("""
     <style>
-    .main-header { background-color: #004a99; color: white; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 2rem; }
-    .status-card { background-color: #f0f2f6; padding: 20px; border-radius: 10px; border: 1px solid #dcdfe6; }
-    .stTable { font-size: 1.1rem; }
+    .report-header { background-color: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 5px solid #007bff; margin-bottom: 20px; }
+    .stMetric { border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; background-color: #ffffff; }
     </style>
     """, unsafe_allow_html=True)
 
 # ================================
-# 2. PDF生成エンジン
+# 2. PDF生成エンジン (医療レポート体裁)
 # ================================
 try:
     pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
@@ -36,85 +34,135 @@ def generate_medical_report(data):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     w, h = A4
+
+    # --- ヘッダー ---
     c.setFont("HeiseiMin-W3", 18)
     c.drawCentredString(w/2, h - 20*mm, "水分出納管理記録 (Fluid Balance Report)")
+    
     c.setFont("HeiseiMin-W3", 10)
     c.drawString(20*mm, h - 30*mm, f"記録日時: {datetime.datetime.now().strftime('%Y/%m/%d %H:%M')}")
     c.drawString(150*mm, h - 30*mm, f"記録者: {data['recorder'] or '__________'}")
     c.line(20*mm, h - 32*mm, 190*mm, h - 32*mm)
+
+    # --- 患者・基本情報セクション ---
     y = h - 45*mm
     c.setFont("HeiseiMin-W3", 12)
-    c.drawString(20*mm, y, "【患者基本情報】")
-    y -= 10*mm
-    c.setFont("HeiseiMin-W3", 10)
-    c.drawString(25*mm, y, f"年齢: {data['age']} 歳 / 体重: {data['weight']} kg / 体温: {data['temp']} ℃ / 室温: {data['room_temp']} ℃")
-    y -= 15*mm
-    c.setFont("HeiseiMin-W3", 12)
-    c.drawString(20*mm, y, "【入出量詳細テーブル】")
+    c.setFillColor(colors.black)
+    c.drawString(20*mm, y, "【基本情報】")
     y -= 8*mm
-    # PDF内簡易テーブル
+    
+    # グリッド表示
     c.setFont("HeiseiMin-W3", 10)
-    c.drawString(25*mm, y, "項目 (IN)")
-    c.drawString(60*mm, y, "量(mL)")
-    c.drawString(110*mm, y, "項目 (OUT)")
-    c.drawString(155*mm, y, "量(mL)")
-    y -= 2*mm
+    base_info = [
+        f"年齢: {data['age']} 歳", f"現体重: {data['weight']} kg", 
+        f"体温: {data['temp']} ℃", f"室温: {data['room_temp']} ℃",
+        f"推定体水分率: {data['bw_percent']:.1f} %", f"推定総体水分量: {data['bw_total']:.1f} L"
+    ]
+    for i, info in enumerate(base_info):
+        col = i % 2
+        row = i // 2
+        c.drawString((25 + col*80)*mm, y - row*6*mm, info)
+    
+    y -= 25*mm
+    c.line(20*mm, y+2*mm, 190*mm, y+2*mm)
+
+    # --- 入出量テーブル ---
+    c.setFont("HeiseiMin-W3", 12)
+    c.drawString(20*mm, y, "【入出量詳細 / 24時間換算】")
+    y -= 10*mm
+
+    # テーブル見出し
+    c.setFont("HeiseiMin-W3", 10)
+    c.drawString(25*mm, y, "項目 (IN / 摂取)")
+    c.drawString(70*mm, y, "数値 (mL)")
+    c.drawString(110*mm, y, "項目 (OUT / 排泄・損失)")
+    c.drawString(165*mm, y, "数値 (mL)")
+    y -= 4*mm
     c.line(20*mm, y, 190*mm, y)
     y -= 7*mm
-    items = [
-        ("経口/経管", f"{data['oral']}", "尿量", f"{data['urine']}"),
-        ("静脈輸液", f"{data['iv']}", "出血/ドレーン", f"{data['bleeding']}"),
-        ("輸血", f"{data['blood']}", "便中水分", f"{data['stool']}"),
-        ("代謝水", f"{data['metabolic']}", "不感蒸泄", f"{data['insensible']}")
+
+    rows = [
+        ("経口摂取", f"{data['oral']}", "尿量", f"{data['urine']}"),
+        ("静脈輸液", f"{data['iv']}", "消化管・出血", f"{data['bleeding']}"),
+        ("輸血製剤", f"{data['blood']}", "便中水分", f"{data['stool']}"),
+        ("代謝水(推定)", f"{data['metabolic']}", "不感蒸泄(推定)", f"{data['insensible']}")
     ]
-    for i1, v1, i2, v2 in items:
-        c.drawString(25*mm, y, i1)
-        c.drawRightString(85*mm, y, v1)
-        c.drawString(110*mm, y, i2)
-        c.drawRightString(180*mm, y, v2)
+
+    for in_n, in_v, out_n, out_v in rows:
+        c.drawString(25*mm, y, in_n)
+        c.drawRightString(85*mm, y, in_v)
+        c.drawString(110*mm, y, out_n)
+        c.drawRightString(180*mm, y, out_v)
         y -= 6*mm
-    y -= 15*mm
-    c.setFont("HeiseiMin-W3", 14)
-    c.drawCentredString(w/2, y, f"24h ネットバランス: {data['net']:+.0f} mL")
+
+    y -= 5*mm
+    c.line(20*mm, y, 190*mm, y)
+    y -= 8*mm
+
+    # --- 総合評価 ---
+    c.setFont("HeiseiMin-W3", 12)
+    c.drawString(20*mm, y, "【水分バランス評価】")
     y -= 10*mm
+    
+    c.setFont("HeiseiMin-W3", 14)
+    balance_text = f"ネットバランス: {data['net']:+.0f} mL / day"
+    c.drawCentredString(w/2, y, balance_text)
+    y -= 10*mm
+    
     c.setFont("HeiseiMin-W3", 10)
-    c.drawString(25*mm, y, f"総合評価: {data['judgment']}")
+    c.drawString(25*mm, y, "総合判定:")
+    c.setFont("HeiseiMin-W3", 11)
+    c.drawString(45*mm, y, data['judgment'])
+    
+    y -= 15*mm
+    c.setFont("HeiseiMin-W3", 9)
+    c.drawString(20*mm, y, "※不感蒸泄算出式: 15ml × kg × (発熱補正 1.0 + 0.15 × ΔT) × (室温補正 1.0 + 0.175 × ΔRoomT)")
+    y -= 5*mm
+    c.drawString(20*mm, y, "※本レポートは入力データに基づく推定値です。臨床判断は医師の指示に従ってください。")
+
     c.showPage()
     c.save()
     buffer.seek(0)
     return buffer
 
 # ================================
-# 3. メインUI
+# 3. アプリメインUI
 # ================================
-st.markdown('<div class="main-header"><h1>🏥 水分出納管理システム</h1></div>', unsafe_allow_html=True)
+st.title("🏥 水分出納バランス記録システム")
 
-# 入力セクション
-with st.sidebar:
-    st.header("📋 患者基本データ")
-    recorder = st.text_input("記録責任者", "")
-    age = st.number_input("年齢", 0, 120, 65)
-    weight = st.number_input("体重 (kg)", 1.0, 200.0, 60.0)
-    temp = st.number_input("体温 (℃)", 34.0, 42.0, 36.5, 0.1)
-    r_temp = st.number_input("室温 (℃)", 10.0, 40.0, 24.0)
+with st.container():
+    st.markdown('<div class="report-header"><h4>1. 基本・臨床パラメータ</h4></div>', unsafe_allow_html=True)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1: age = st.number_input("年齢", 0, 120, 65)
+    with c2: weight = st.number_input("体重 (kg)", 1.0, 200.0, 60.0)
+    with c3: temp = st.number_input("体温 (℃)", 34.0, 42.0, 36.5, 0.1)
+    with c4: r_temp = st.number_input("室温 (℃)", 10.0, 40.0, 24.0)
+    with c5: recorder = st.text_input("記録責任者", "")
 
-# 1. 摂取・排泄データの入力
-col1, col2 = st.columns(2)
+# 推定計算
+bw_p = (80 - (age/1)*10) if age<=1 else (70 - ((age-1)/12)*10) if age<=13 else (60 - ((age-13)/52)*10) if age<=65 else 50
+bw_t = weight * (bw_p / 100)
 
-with col1:
-    st.markdown("### 📥 Intake (摂取量)")
-    oral = st.number_input("経口摂取・経管栄養 (mL)", 0, 10000, 1500)
-    iv = st.number_input("点滴・静脈輸液 (mL)", 0, 10000, 500)
-    blood = st.number_input("輸血製剤 (mL)", 0, 5000, 0)
+st.markdown("---")
+
+col_in_ui, col_out_ui = st.columns(2)
+
+with col_in_ui:
+    st.subheader("📥 Intake (摂取)")
+    oral = st.number_input("経口・経管栄養 (mL)", 0, 10000, 1500, 50)
+    iv = st.number_input("静脈輸液 (mL)", 0, 10000, 500, 50)
+    blood = st.number_input("輸血 (mL)", 0, 5000, 0, 50)
     metabolic = 5 * weight # 代謝水
 
-with col2:
-    st.markdown("### 📤 Output (排泄量)")
-    u_vol = st.number_input("総尿量 (mL)", 0, 10000, 1200)
+with col_out_ui:
+    st.subheader("📤 Output (排泄)")
+    u_times = st.number_input("排尿回数/日", 0, 20, 5)
+    u_vol = st.number_input("平均1回尿量 (mL)", 0, 1000, 250)
+    urine = u_times * u_vol
     bleeding = st.number_input("出血・ドレーン等 (mL)", 0, 5000, 0)
-    s_type = st.selectbox("便性状", ["普通便", "軟便", "下痢便"])
-    s_vol = st.number_input("便量 (g)", 0, 1000, 150)
-    stool = s_vol * (0.75 if s_type=="普通便" else 0.85 if s_type=="軟便" else 0.95)
+    s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"])
+    s_vol = st.number_input("便重量 (g)", 0, 1000, 150)
+    stool = s_vol * (0.75 if s_type=="普通" else 0.85 if s_type=="軟便" else 0.95)
 
 # 不感蒸泄計算
 insensible = 15 * weight
@@ -122,69 +170,43 @@ if temp > 37: insensible *= (1 + 0.15 * (temp - 37))
 if r_temp > 30: insensible *= (1 + 0.175 * (r_temp - 30))
 
 total_in = oral + iv + blood + metabolic
-total_out = u_vol + bleeding + stool + insensible
+total_out = urine + bleeding + stool + insensible
 net_bal = total_in - total_out
 
-# 2. 結果のテーブル化表示
-st.markdown("---")
-st.header("📊 水分出納詳細テーブル")
+# ================================
+# 4. 判定とレポート作成
+# ================================
+st.markdown('<div class="report-header"><h4>2. 分析結果</h4></div>', unsafe_allow_html=True)
+m1, m2, m3 = st.columns(3)
+m1.metric("総 IN", f"{total_in:.0f} mL")
+m2.metric("総 OUT", f"{total_out:.0f} mL")
+m3.metric("バランス", f"{net_bal:+.0f} mL", delta_color="inverse")
 
-# データの構造化
-df_in = pd.DataFrame({
-    "項目": ["経口/経管", "静脈輸液", "輸血", "代謝水(推定)"],
-    "量 (mL)": [oral, iv, blood, metabolic]
-})
+if net_bal > 500:
+    judg = "体液過剰 (Overhydration) の傾向あり。浮腫・心負荷に注意。"
+    st.error(judg)
+elif net_bal < -200:
+    judg = "脱水 (Dehydration) のリスクあり。循環動態を要確認。"
+    st.warning(judg)
+else:
+    judg = "維持範囲内 (Maintenance range)。現状維持。"
+    st.success(judg)
 
-df_out = pd.DataFrame({
-    "項目": ["尿量", "出血/ドレーン", "便中水分", "不感蒸泄(推定)"],
-    "量 (mL)": [u_vol, bleeding, stool, insensible]
-})
-
-t_col1, t_col2 = st.columns(2)
-with t_col1:
-    st.subheader("摂取詳細")
-    st.table(df_in)
-    st.markdown(f"**摂取合計: {total_in:.0f} mL**")
-
-with t_col2:
-    st.subheader("排泄詳細")
-    st.table(df_out)
-    st.markdown(f"**排泄合計: {total_out:.0f} mL**")
-
-# 3. 総合判定サマリー
-st.markdown("---")
-st.header("🩺 臨床評価サマリー")
-
-res_col1, res_col2 = st.columns([1, 2])
-
-with res_col1:
-    st.metric("Net Balance", f"{net_bal:+.0f} mL", delta=net_bal, delta_color="inverse")
-
-with res_col2:
-    if net_bal > 500:
-        judg = "【注意】体液過剰傾向。心不全症状（浮腫・喘鳴）や血圧上昇に留意してください。"
-        st.error(judg)
-    elif net_bal < -200:
-        judg = "【注意】脱水傾向。皮膚ツルゴール低下、口渇、血圧低下、尿量減少を要確認。"
-        st.warning(judg)
-    else:
-        judg = "【正常】水分バランスは維持範囲内です。現在の管理を継続してください。"
-        st.success(judg)
-
-# PDF出力用データ
+# データ受け渡し用辞書
 report_data = {
     "age": age, "weight": weight, "temp": temp, "room_temp": r_temp,
+    "bw_percent": bw_p, "bw_total": bw_t,
     "oral": oral, "iv": iv, "blood": blood, "metabolic": metabolic,
-    "urine": u_vol, "bleeding": bleeding, "stool": stool, "insensible": insensible,
+    "urine": urine, "bleeding": bleeding, "stool": stool, "insensible": insensible,
     "net": net_bal, "judgment": judg, "recorder": recorder
 }
 
 st.markdown("---")
-if st.button("📄 医療レポート(PDF)を生成"):
+if st.button("📝 医療レポート(PDF)を生成"):
     pdf = generate_medical_report(report_data)
     st.download_button(
         label="📥 レポートをダウンロード",
         data=pdf,
-        file_name=f"Report_FluidBalance_{datetime.date.today()}.pdf",
+        file_name=f"FluidBalance_{datetime.date.today()}_{recorder}.pdf",
         mime="application/pdf"
     )
