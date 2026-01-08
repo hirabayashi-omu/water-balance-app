@@ -61,7 +61,7 @@ def generate_medical_report(data):
     jst_now = get_jst_now().strftime('%Y/%m/%d %H:%M')
 
     c.setFont("HeiseiMin-W3", 18)
-    c.drawCentredString(w/2, h - 20*mm, "水分出納管理記録 (2026)")
+    c.drawCentredString(w/2, h - 20*mm, "水分出納管理判定 (2026)")
     c.setFont("HeiseiMin-W3", 10)
     c.drawString(20*mm, h - 30*mm, f"記録日時: {jst_now}")
     c.drawString(150*mm, h - 30*mm, f"記録者: {data['recorder'] or '未記入'}")
@@ -173,4 +173,5 @@ if st.button("📝 医療レポート(PDF)を生成"):
         file_name=f"Report_{get_jst_now().strftime('%Y%m%d')}.pdf",
         mime="application/pdf"
     )
+
 
