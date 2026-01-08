@@ -100,7 +100,7 @@ def generate_medical_report(data):
 # ================================
 # 3. アプリメインUI
 # ================================
-st.title("🏥 水分出納バランス記録")
+st.title("🏥 水分出納バランス判定")
 
 # 1. 基本・臨床パラメータ
 st.markdown('<div class="report-header-box"><h4>1. 基本・臨床パラメータ</h4></div>', unsafe_allow_html=True)
@@ -173,5 +173,6 @@ if st.button("📝 医療レポート(PDF)を生成"):
         file_name=f"Report_{get_jst_now().strftime('%Y%m%d')}.pdf",
         mime="application/pdf"
     )
+
 
 
