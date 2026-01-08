@@ -401,21 +401,96 @@ if generate_pdf:
         )
         st.code(str(e))
 
-if st.button("PDF レポートを生成"):
-    pdf_buffer = generate_pdf_report(
-        age, weight, temp, room_temp,
-        body_water_percent, body_total_water,
-        oral, iv, blood_transfusion, total_in,
-        urine, bleeding, stool_loss, total_out,
-        insensible, metabolic_water,
-        net_balance, judgment,
-        recorder
-    )
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from io import BytesIO
+import datetime
 
-    st.download_button(
-        label="PDF をダウンロード",
-        data=pdf_buffer,
-        file_name="water_balance_report.pdf",
-        mime="application/pdf"
-    )
+# 日本語フォント（HeiseiMin-W3）を登録
+pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
+
+def generate_pdf_report(
+    age, weight, temp, room_temp,
+    body_water_percent, body_total_water,
+    oral, iv, blood_transfusion, total_in,
+    urine, bleeding, stool_loss, total_out,
+    insensible, metabolic_water,
+    net_balance, judgment,
+    recorder
+):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    c.setFont("HeiseiMin-W3", 12)
+
+    today = datetime.date.today().strftime("%Y-%m-%d")
+
+    # タイトル
+    c.setFont("HeiseiMin-W3", 16)
+    c.drawString(20*mm, 280*mm, "水分出納バランスレポート")
+    c.setFont("HeiseiMin-W3", 10)
+    c.drawString(20*mm, 275*mm, f"作成日: {today}   記録者: {recorder if recorder else '（未入力）'}")
+
+    y = 265
+
+    # セクション描画関数
+    def section(title):
+        nonlocal y
+        c.setFont("HeiseiMin-W3", 12)
+        c.drawString(20*mm, y*mm, f"■ {title}")
+        y -= 7
+
+    # テキスト行描画
+    def row(label, value):
+        nonlocal y
+        c.setFont("HeiseiMin-W3", 11)
+        c.drawString(25*mm, y*mm, f"{label}: {value}")
+        y -= 6
+
+    # 1. 基本情報
+    section("基本情報")
+    row("年齢", f"{age} 歳")
+    row("体重", f"{weight:.1f} kg")
+    row("体温", f"{temp:.1f} ℃")
+    row("室温", f"{room_temp:.1f} ℃")
+    row("推定体水分率", f"{body_water_percent:.1f} %")
+    row("推定総体水分量", f"{body_total_water:.1f} L")
+
+    # 2. In
+    section("In（摂取量）")
+    row("経口摂取量", f"{oral:.0f} mL/day")
+    row("点滴・輸液量", f"{iv:.0f} mL/day")
+    row("輸血量", f"{blood_transfusion:.0f} mL/day")
+    row("合計 In", f"{total_in:.0f} mL/day")
+
+    # 3. Out
+    section("Out（排泄量）")
+    row("尿量", f"{urine:.0f} mL/day")
+    row("出血量", f"{bleeding:.0f} mL/day")
+    row("便による水分損失", f"{stool_loss:.0f} mL/day")
+    row("合計 Out", f"{total_out:.0f} mL/day")
+
+    # 4. 不感蒸泄・代謝水
+    section("不感蒸泄・代謝水")
+    row("不感蒸泄", f"{insensible:.0f} mL/day")
+    row("代謝水", f"{metabolic_water:.0f} mL/day")
+
+    # 5. 水分バランス
+    section("水分バランス評価")
+    row("水分バランス", f"{net_balance:.0f} mL/day")
+    row("総合判定", judgment)
+
+    # 注意書き
+    y -= 5
+    c.setFont("HeiseiMin-W3", 9)
+    c.drawString(20*mm, y*mm, "※本レポートは推定値に基づく参考資料です。診断・治療は臨床症状と主治医の判断を優先してください。")
+
+    c.showPage()
+    c.save()
+
+    buffer.seek(0)
+    return buffer
+
 
