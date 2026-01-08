@@ -381,20 +381,24 @@ def build_report_html():
 # 実際に PDF を生成してダウンロードする部分
 generate_pdf = st.button("PDF レポートを生成してダウンロード")
 
-if generate_pdf:
-    try:
-        import pdfkit
+if st.button("PDF レポートを生成"):
+    pdf_buffer = generate_pdf_report(
+        age, weight, temp, room_temp,
+        body_water_percent, body_total_water,
+        oral, iv, blood_transfusion, total_in,
+        urine, bleeding, stool_loss, total_out,
+        insensible, metabolic_water,
+        net_balance, judgment,
+        recorder
+    )
 
-        html = build_report_html()
-        # wkhtmltopdf がインストールされている前提
-        pdf_bytes = pdfkit.from_string(html, False)
+    st.download_button(
+        label="PDF をダウンロード",
+        data=pdf_buffer,
+        file_name="water_balance_report.pdf",
+        mime="application/pdf"
+    )
 
-        st.download_button(
-            label="PDF レポートをダウンロード",
-            data=pdf_bytes,
-            file_name="water_balance_report.pdf",
-            mime="application/pdf"
-        )
     except Exception as e:
         st.error(
             "PDF 生成中にエラーが発生しました。サーバ側に `pdfkit` と `wkhtmltopdf` がインストールされているか確認してください。"
@@ -492,5 +496,6 @@ def generate_pdf_report(
 
     buffer.seek(0)
     return buffer
+
 
 
