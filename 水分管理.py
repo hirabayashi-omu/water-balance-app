@@ -67,10 +67,11 @@ def urine_dialog():
     if c_ok.button("✅ 入力に反映"):
         st.session_state.u_vol = int(est_u_vol)
         st.session_state.show_urine_dialog = False
-        st.experimental_rerun()
+        st.stop()  # ← rerun の代わり
     if c_ng.button("❌ キャンセル"):
         st.session_state.show_urine_dialog = False
-        st.experimental_rerun()
+        st.stop()
+
 
 # ================================
 # 便量推算ダイアログ（定義だけ）
@@ -738,6 +739,7 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
+
 
 
 
