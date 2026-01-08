@@ -168,25 +168,69 @@ if page == "🏠 メイン計算":
                            file_name=f"Report_{get_jst_now().strftime('%Y%m%d')}.pdf", mime="application/pdf")
 
 # ================================
-# 5. 推算根拠ページ
+# 5. 推算根拠ページ (全文詳細版)
 # ================================
 else:
-    st.title("📖 推算根拠（計算式）")
-    st.info("2026年現在の一般的な臨床指標に基づいています。")
+    st.title("📖 水分出納の推算根拠と判定基準")
     
-    st.subheader("1. 代謝水 (Metabolic Water)")
-    st.latex(r"5 \, \text{mL} \times \text{Weight(kg)}")
+    st.info("本プログラムで使用している各種推算式は以下の通りです。これらは臨床現場で一般的に用いられる指標に基づいています。")
+
+    # 1. 入出量合計の算出式
+    st.markdown('<div class="report-header-box"><h4>1. 入出量合計の算出式</h4></div>', unsafe_allow_html=True)
+    st.write("**■ 総 Intake (総流入量)**")
+    st.latex(r"\text{総IN} = \text{経口摂取(経管)} + \text{静脈輸液} + \text{輸血製剤} + \text{代謝水}")
     
-    st.subheader("2. 不感蒸泄 (Insensible Water)")
-    st.latex(r"15 \, \text{mL} \times \text{Weight(kg)} \times \text{補正係数}")
-    st.write("**体温補正:** 37℃以上で1℃につき+15%")
-    st.write("**室温補正:** 30℃以上で1℃につき+17.5%")
+    st.write("**■ 総 Output (総流出量)**")
+    st.latex(r"\text{総OUT} = \text{尿量} + \text{出血・ドレーン等} + \text{便中水分} + \text{不感蒸泄}")
     
-    st.subheader("3. 便中水分率")
-    st.write("・普通便: 75% / ・軟便: 85% / ・下痢: 95%")
+    st.write("**■ ネットバランス (Net Balance)**")
+    st.latex(r"\text{バランス} = \text{総IN} - \text{総OUT}")
+
+    # 2. 各項目の推算根拠
+    st.markdown('<div class="report-header-box"><h4>2. 各項目の推算根拠</h4></div>', unsafe_allow_html=True)
     
-    st.subheader("4. 判定基準 (24時間)")
-    st.table({
-        "判定": ["体液過剰", "維持範囲", "脱水リスク"],
-        "しきい値": ["> +500 mL", "-200 ～ +500 mL", "< -200 mL"]
-    })
+    st.markdown("##### ① 代謝水 (Metabolic Water)")
+    st.write("栄養素が体内で燃焼（酸化）される際に生成される水分です。")
+    st.latex(r"\text{算出式: } 5\,\text{mL} \times \text{体重(kg)}")
+    st.caption("根拠: 通常、成人では1日あたり約200〜300mL（約5mL/kg）程度とされています。")
+
+    st.markdown("##### ② 不感蒸泄 (Insensible Water Loss)")
+    st.write("呼気や皮膚から自覚なしに失われる水分です。体温や周囲の温度によって変動します。")
+    st.latex(r"\text{基本式: } 15\,\text{mL} \times \text{体重(kg)}")
+    
+    st.write("**・発熱補正:** 体温が37℃を超える場合、1℃上昇につき15%増加させます。")
+    st.latex(r"\text{補正係数} = 1.0 + 0.15 \times (\text{体温} - 37)")
+    
+    st.write("**・室温補正:** 室温が30℃を超える場合、1℃上昇につき17.5%増加させます。")
+    st.latex(r"\text{補正係数} = 1.0 + 0.175 \times (\text{室温} - 30)")
+
+    st.markdown("##### ③ 便中水分")
+    st.write("便の性状（水分含有率）に基づき、重量から水分量を推定します。")
+    st.write("- **普通便:** $重量(g) \times 0.75$")
+    st.write("- **軟便:** $重量(g) \times 0.85$")
+    st.write("- **下痢:** $重量(g) \times 0.95$")
+
+    st.markdown("##### ④ 推定体水分率 (Total Body Water %)")
+    st.write("加齢に伴う細胞内液の減少を考慮した推算式です。")
+    st.write("- **乳児(0-1歳):** 80%から月齢に応じて減少")
+    st.write("- **幼児・学童(1-13歳):** 70%から年齢に応じて減少")
+    st.write("- **成人(14-65歳):** 60%から年齢に応じて減少")
+    st.write("- **高齢者(65歳以上):** 一律 50%")
+
+    # 3. 2026年現在の臨床的判定基準
+    st.markdown('<div class="report-header-box"><h4>3. 2026年現在の臨床的判定基準</h4></div>', unsafe_allow_html=True)
+    st.write("本システムでは、24時間あたりのネットバランスに基づき以下の判定を行っています。")
+    
+    st.table([
+        {"バランス結果": "+500 mL 超", "判定": "体液過剰 (Overhydration)", "臨床的リスク": "心不全増悪、浮腫、肺水腫のリスク"},
+        {"バランス結果": "-200 ～ +500 mL", "判定": "維持範囲 (Maintenance)", "臨床的リスク": "生理的許容範囲"},
+        {"バランス結果": "-200 mL 未満", "判定": "脱水リスク (Dehydration)", "臨床的リスク": "腎不全（乏尿）、循環不全、血圧低下のリスク"}
+    ])
+
+    st.warning("""
+    **※これらの数値はあくまで目安です。**  
+    2026年1月9日現在の臨床ガイドラインに則り、実際の診断には血清ナトリウム値、心エコー、皮膚緊張度（ツルゴール）等の身体所見を併せて評価する必要があります。
+    """)
+
+    if st.sidebar.button("🏠 メイン画面へ戻る"):
+        st.info("サイドメニューから「メイン計算」を選択してください。")
