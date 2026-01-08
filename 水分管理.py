@@ -169,7 +169,25 @@ if st.session_state.page == "main":
         st.success(judg)
 
     if st.button("📝 PDF生成"):
-        pdf = generate_medical_report(locals())
+        report_data = {
+            "age": age,
+            "weight": weight,
+            "temp": temp,
+            "room_temp": r_temp,
+            "oral": oral,
+            "iv": iv,
+            "blood": blood,
+            "metabolic": metabolic,
+            "urine": urine,
+            "bleeding": bleeding,
+            "stool": stool,
+            "insensible": insensible,
+            "net": net,
+            "judgment": judg,
+            "recorder": recorder
+        }
+    
+        pdf = generate_medical_report(report_data)
         st.download_button("📥 ダウンロード", pdf, "fluid_balance.pdf")
 
 # ================================
@@ -279,6 +297,7 @@ elif st.session_state.page == "refs":
     **臨床現場での利用にあたって**  
     2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
     """)
+
 
 
 
