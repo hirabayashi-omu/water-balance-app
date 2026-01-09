@@ -449,7 +449,9 @@ if st.session_state.page == "main":
         
         # 代謝水計算
         # 代謝水計算
+        # 代謝水計算
         metabolic = kcal * meta_coef
+        st.session_state["disp_metabolic"] = float(metabolic)
         st.number_input(
             ":blue[代謝水(自動計算) mL]", 
             value=float(metabolic), 
@@ -521,6 +523,7 @@ if st.session_state.page == "main":
         if r_temp > 30.0: 
             insensible_calc *= (1 + 0.175 * (r_temp - 30.0))
             
+        st.session_state["disp_insensible"] = float(insensible_calc)
         st.number_input(
             ":red[不感蒸泄(自動計算) mL]", 
             value=float(insensible_calc), 
