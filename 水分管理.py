@@ -355,13 +355,14 @@ if st.session_state.page == "main":
 
     # --- 2. 基本情報入力エリア ---
     st.markdown('<div class="report-header-box"><h4>📋 基本パラメータ設定</h4></div>', unsafe_allow_html=True)
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     age = c1.number_input("年齢", 0, 120, 20, key="main_age")
-    weight = c2.number_input("体重(kg)", 1.0, 200.0, value=weight_init, step=0.1, key="main_weight")
+    gender = c2.selectbox("性別", ["男性", "女性"], key="main_gender")
+    weight = c3.number_input("体重(kg)", 1.0, 200.0, value=weight_init, step=0.1, key="main_weight")
     st.session_state.weight = weight
-    temp = c3.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1, key="main_temp")
-    r_temp = c4.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5, key="main_rtemp")
-    recorder = c5.text_input("記録者", value=st.session_state.recorder, key="main_recorder")
+    temp = c4.number_input("体温(℃)", 34.0, 42.0, 36.5, 0.1, key="main_temp")
+    r_temp = c5.number_input("室温(℃)", 10.0, 40.0, 24.0, 0.5, key="main_rtemp")
+    recorder = c6.text_input("記録者", value=st.session_state.recorder, key="main_recorder")
     st.session_state.recorder = recorder
 
     # --- 3. IN / OUT 入力エリア ---
@@ -431,6 +432,7 @@ if st.session_state.page == "main":
     m3.metric("バランス", f"{net_balance:+.0f} mL")
 
     # 3. 判定メッセージ（status_funcなどの変数を使わず直接表示）
+    # 3. 判定メッセージ（status_funcなどの変数を使わず直接表示）
     if net_balance > 500:
         judg = "体液過剰の傾向"
         st.error(f"判定：{judg}")
@@ -440,6 +442,46 @@ if st.session_state.page == "main":
     else:
         judg = "維持範囲"
         st.success(f"判定：{judg}")
+
+    # --- 追加: 体内全水分量と損失率の計算 ---
+    # 係数決定
+    if age < 1:
+        tbw_ratio = 0.8
+    elif age < 14:
+        tbw_ratio = 0.7
+    elif age >= 65:
+        tbw_ratio = 0.5
+    else:
+        # 成人(14-64)
+        if gender == "男性":
+            tbw_ratio = 0.6
+        else:
+            tbw_ratio = 0.55
+            
+    tbw_val = weight * tbw_ratio * 1000  # mL換算
+    
+    # 損失量の計算（マイナスバランスの場合のみ）
+    loss_ml = abs(net_balance) if net_balance < 0 else 0
+    loss_rate = (loss_ml / tbw_val) * 100 if tbw_val > 0 else 0
+    
+    st.markdown("### 💧 水分状態の詳細分析")
+    c_res1, c_res2 = st.columns(2)
+    c_res1.metric("推算体内全水分量 (TBW)", f"{tbw_val:,.0f} mL", help=f"年齢・性別・体重から推算（係数: {tbw_ratio*100:.0f}%）")
+    
+    # 損失率の表示（色分け）
+    loss_color = "normal"
+    if loss_rate >= 2.0:
+        loss_color = "off" # inverse logic usually, but here checking threshold
+    
+    c_res2.metric("水分損失率 (対 TBW)", f"{loss_rate:.2f} %", delta=None)
+
+    # パフォーマンス低下警告
+    if loss_rate >= 3.0:
+        st.error(f"⚠️ 水分損失率が {loss_rate:.1f}% です。運動パフォーマンスの著しい低下や熱中症のリスクがあります。直ちに水分補給を行ってください。")
+    elif loss_rate >= 2.0:
+        st.warning(f"⚠️ 水分損失率が {loss_rate:.1f}% です。運動パフォーマンスの低下（2〜3%）が懸念されます。早めの水分補給を推奨します。")
+    elif loss_rate > 0:
+        st.info(f"水分損失率は {loss_rate:.1f}% です。こまめな水分補給を心がけましょう。")
 
     # 4. PDF生成ボタン（一つに集約）
     st.markdown("---")
