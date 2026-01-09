@@ -65,12 +65,14 @@ def urine_dialog():
 
     c_ok, c_ng = st.columns(2)
     if c_ok.button("✅ 入力に反映"):
+        # ウィジェットのキー("out_uvol")を更新してUIに反映させる
+        st.session_state["out_uvol"] = int(est_u_vol)
         st.session_state.u_vol = int(est_u_vol)
         st.session_state.show_urine_dialog = False
-        st.stop()  # ← rerun の代わり
+        st.rerun()
     if c_ng.button("❌ キャンセル"):
         st.session_state.show_urine_dialog = False
-        st.stop()
+        st.rerun()
 
 
 # ================================
@@ -107,10 +109,14 @@ def stool_dialog():
     # 入力反映ボタン
     c_ok, c_ng = st.columns(2)
     if c_ok.button("✅ 入力に反映"):
+        # ウィジェットのキー("out_svol")を更新してUIに反映させる
+        st.session_state["out_svol"] = int(est_stool)
         st.session_state.s_vol = int(est_stool)
         st.session_state.show_stool_dialog = False
+        st.rerun()
     if c_ng.button("❌ キャンセル"):
         st.session_state.show_stool_dialog = False
+        st.rerun()
 
 # ================================
 # session_state 初期化（必須）
@@ -333,39 +339,7 @@ st.markdown("---")
 # ================================
 # 5. メイン計算ページ
 # ================================
-if st.session_state.page == "main":
-    # --- ここで変数を初期化（NameError対策） ---
-    oral = iv = blood = metabolic = 0
-    urine = bleeding = stool = insensible = 0
-    age = 20
-    weight = 60.0
-    temp = 36.5
-    r_temp = 24.0
-    recorder = ""
-    s_type = "普通"
-    # ---------------------------------------
 
-    # ------------------
-    # ダイアログ呼び出し（最上流）
-    # ------------------
-    if st.session_state.show_urine_dialog:
-        urine_dialog()
-        st.stop()  # ダイアログ表示中はUI描画を停止
-    elif st.session_state.show_stool_dialog:
-        stool_dialog()
-        st.stop()  # ダイアログ表示中はUI描画を停止
-
-    # ---- session_state 初期化 ----
-    if "u_times" not in st.session_state:
-        st.session_state.u_times = 5
-    if "u_vol" not in st.session_state:
-        st.session_state.u_vol = 250
-    if "s_vol" not in st.session_state:
-        st.session_state.s_vol = 150
-    if "show_urine_dialog" not in st.session_state:
-        st.session_state.show_urine_dialog = False
-    if "show_stool_dialog" not in st.session_state:
-        st.session_state.show_stool_dialog = False
 
 # =========================================================
 # 5. メイン計算ページ（2026/01/09 最終安定版）
@@ -794,7 +768,6 @@ elif st.session_state.page == "refs":
 2026年現在の医学的知見に基づき構成されていますが、臨床的な最終判断は  
 患者個別の身体所見（血圧、浮腫、血清Na値等）に基づき、医師が行ってください。
 """)
-
 
 
 
