@@ -503,6 +503,15 @@ if st.session_state.page == "main":
             key="out_stype_main",
             help="便の水分量補正に使用します。\n・普通: ×0.75\n・軟便: ×0.85\n・下痢: ×0.95"
         )
+        
+        # 不感蒸泄の計算と表示（これまで下部で行っていた計算をここでも行う）
+        insensible_calc = 15.0 * weight
+        if temp > 37.0: 
+            insensible_calc *= (1 + 0.15 * (temp - 37.0))
+        if r_temp > 30.0: 
+            insensible_calc *= (1 + 0.175 * (r_temp - 30.0))
+            
+        st.info(f"自動計算：:red[不感蒸泄] {insensible_calc:.0f} mL (体重・体温・室温より)")
 
     # =========================================================
     # 【完結】これより下は計算と表示。重複コードはすべて消去してください
