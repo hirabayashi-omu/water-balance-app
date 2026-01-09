@@ -411,15 +411,41 @@ if st.session_state.page == "main":
 
     with col_in:
         st.markdown('<p class="section-header-in">📥 IN (摂取・流入)</p>', unsafe_allow_html=True)
-        oral = st.number_input(":blue[経口摂取(mL)] ※代謝水除く", 0, 10000, 1500, 50, key="in_oral")
+        oral = st.number_input(
+            ":blue[経口摂取(mL)] ※代謝水除く", 
+            0, 10000, 1500, 50, 
+            key="in_oral",
+            help="水、お茶、ジュース、スープ、飲み薬の水など。\n食事中の水分（ご飯、野菜など）を含めるかどうかは方針に従ってください。"
+        )
         
         # 代謝水計算用カロリー入力
         ck1, ck2 = st.columns([2, 1])
-        kcal = ck1.number_input(":blue[摂取エネルギー(kcal)] ※代謝水推算用", 0, 5000, 2000, 100, key="in_kcal")
-        meta_coef = ck2.number_input(":blue[係数]", 0.10, 0.20, 0.13, 0.01, format="%.2f", help="通常 0.12〜0.15", key="in_meta_coef")
+        kcal = ck1.number_input(
+            ":blue[摂取エネルギー(kcal)] ※代謝水推算用", 
+            0, 5000, 2000, 100, 
+            key="in_kcal",
+            help="1日の食事・補食の総カロリー。\n(例) おにぎり1個:約180kcal, 一般的な定食:約700kcal"
+        )
+        meta_coef = ck2.number_input(
+            ":blue[係数]", 
+            0.10, 0.20, 0.13, 0.01, 
+            format="%.2f", 
+            key="in_meta_coef",
+            help="代謝水産生係数（通常 0.12 〜 0.15）"
+        )
         
-        iv = st.number_input(":blue[静脈輸液(mL)]", 0, 10000, 0, 50, key="in_iv")
-        blood = st.number_input(":blue[輸血(mL)]", 0, 5000, 0, 50, key="in_blood")
+        iv = st.number_input(
+            ":blue[静脈輸液(mL)]", 
+            0, 10000, 0, 50, 
+            key="in_iv",
+            help="点滴（輸液製剤、抗生剤の溶解液など）。"
+        )
+        blood = st.number_input(
+            ":blue[輸血(mL)]", 
+            0, 5000, 0, 50, 
+            key="in_blood",
+            help="赤血球製剤(RBC)、新鮮凍結血漿(FFP)などの輸血量。"
+        )
         
         # 代謝水計算
         metabolic = kcal * meta_coef
@@ -427,23 +453,43 @@ if st.session_state.page == "main":
 
     with col_out:
         st.markdown('<p class="section-header-out">📤 OUT (排出・喪失)</p>', unsafe_allow_html=True)
-        u_times = st.number_input(":red[排尿回数]", 0, 20, value=u_times_init, key="out_utimes")
+        u_times = st.number_input(
+            ":red[排尿回数]", 
+            0, 20, value=u_times_init, 
+            key="out_utimes",
+            help="24時間でトイレに行った回数。"
+        )
         st.session_state.u_times = u_times
 
         ucol_l, ucol_r = st.columns([3, 2])
         with ucol_l:
-            u_vol = st.number_input(":red[1回尿量(mL)]", 0, 1000, value=u_vol_init, key="out_uvol")
+            u_vol = st.number_input(
+                ":red[1回尿量(mL)]", 
+                0, 1000, value=u_vol_init, 
+                key="out_uvol",
+                help="1回あたりの平均的な量。\n・紙コップ1杯: 約200mL\n・尿器の目盛りなどを参考に。"
+            )
             st.session_state.u_vol = u_vol
         with ucol_r:
             st.markdown("###### ")
             if st.button("📐 尿量推算", use_container_width=True, key="btn_u_calc"):
                 urine_dialog()
 
-        bleeding = st.number_input(":red[出血・ドレーン等(mL)]", 0, 5000, 0, key="out_bleed")
+        bleeding = st.number_input(
+            ":red[出血・ドレーン等(mL)]", 
+            0, 5000, 0, 
+            key="out_bleed",
+            help="手術痕からの出血、ドレーン排液、嘔吐物など、尿・便以外の喪失。"
+        )
 
         scol_l, scol_r = st.columns([3, 2])
         with scol_l:
-            s_vol = st.number_input(":red[便重量(g)]", 0, 1000, value=s_vol_init, key="out_svol")
+            s_vol = st.number_input(
+                ":red[便重量(g)]", 
+                0, 1000, value=s_vol_init, 
+                key="out_svol",
+                help="便の重さ。\n・バナナ1本分: 約100g〜150g\n・卵1個分: 約50g"
+            )
             st.session_state.s_vol = s_vol
         with scol_r:
             st.markdown("###### ")
@@ -451,7 +497,12 @@ if st.session_state.page == "main":
                 stool_dialog()
         
         # 入力項目の最後
-        s_type = st.selectbox(":red[便性状]", ["普通", "軟便", "下痢"], key="out_stype_main")
+        s_type = st.selectbox(
+            ":red[便性状]", 
+            ["普通", "軟便", "下痢"], 
+            key="out_stype_main",
+            help="便の水分量補正に使用します。\n・普通: ×0.75\n・軟便: ×0.85\n・下痢: ×0.95"
+        )
 
     # =========================================================
     # 【完結】これより下は計算と表示。重複コードはすべて消去してください
