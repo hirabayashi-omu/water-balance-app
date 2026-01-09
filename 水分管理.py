@@ -399,7 +399,7 @@ if st.session_state.page == "main":
         
         # 代謝水計算用カロリー入力
         ck1, ck2 = st.columns([2, 1])
-        kcal = ck1.number_input("摂取エネルギー(kcal)", 0, 5000, 2000, 100, key="in_kcal")
+        kcal = ck1.number_input("摂取エネルギー(kcal) ※代謝水推算用", 0, 5000, 2000, 100, key="in_kcal")
         meta_coef = ck2.number_input("係数", 0.10, 0.20, 0.13, 0.01, format="%.2f", help="通常 0.12〜0.15", key="in_meta_coef")
         
         iv = st.number_input("静脈輸液(mL)", 0, 10000, 0, 50, key="in_iv")
