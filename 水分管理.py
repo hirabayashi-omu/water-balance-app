@@ -460,72 +460,7 @@ if st.session_state.page == "main":
             key="btn_download_unified"
         )
 
-# =========================================================
-# ※重要：この行より下にある古い total_in, total_out, m1, m2, m3 
-# などの記述はすべて完全に削除してください。
-# =========================================================
 
-
-
-    # ---- 尿量・便量の確定計算（必ず定義） ----
-    urine = st.session_state.u_times * st.session_state.u_vol
-
-    stool = st.session_state.s_vol * (
-        0.75 if s_type == "普通"
-        else 0.85 if s_type == "軟便"
-        else 0.95
-    )
-
-    # ---- 不感蒸泄 ----
-    insensible = 15 * weight
-    if temp > 37:
-        insensible *= (1 + 0.15 * (temp - 37))
-    if r_temp > 30:
-        insensible *= (1 + 0.175 * (r_temp - 30))
-
-    # ---- 集計 ----
-    total_in = oral + iv + blood + metabolic
-    total_out = urine + bleeding + stool + insensible
-    net = total_in - total_out
-
-    m1, m2, m3 = st.columns(3)
-    m1.metric("総IN", f"{total_in:.0f} mL")
-    m2.metric("総OUT", f"{total_out:.0f} mL")
-    m3.metric("バランス", f"{net:+.0f} mL")
-
-    # ---- 判定 ----
-    if net > 500:
-        judg = "体液過剰の傾向"
-        st.error(judg)
-    elif net < -200:
-        judg = "脱水リスク"
-        st.warning(judg)
-    else:
-        judg = "維持範囲"
-        st.success(judg)
-
-    # ---- PDF ----
-    if st.button("📝 PDF生成"):
-        report_data = {
-            "age": age,
-            "weight": weight,
-            "temp": temp,
-            "room_temp": r_temp,
-            "oral": oral,
-            "iv": iv,
-            "blood": blood,
-            "metabolic": metabolic,
-            "urine": urine,
-            "bleeding": bleeding,
-            "stool": stool,
-            "insensible": insensible,
-            "net": net,
-            "judgment": judg,
-            "recorder": recorder
-        }
-
-        pdf = generate_medical_report(report_data)
-        st.download_button("📥 ダウンロード", pdf, "fluid_balance.pdf")
 
 
 
