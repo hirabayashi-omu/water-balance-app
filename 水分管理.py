@@ -511,7 +511,7 @@ if st.session_state.page == "main":
         if r_temp > 30.0: 
             insensible_calc *= (1 + 0.175 * (r_temp - 30.0))
             
-        st.info(f"自動計算：:red[不感蒸泄] {insensible_calc:.0f} mL (体重・体温・室温より)")
+        st.error(f"自動計算：:red[不感蒸泄] {insensible_calc:.0f} mL (体重・体温・室温より)")
 
     # =========================================================
     # 【完結】これより下は計算と表示。重複コードはすべて消去してください
