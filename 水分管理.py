@@ -24,23 +24,39 @@ st.set_page_config(page_title="水分出納管理システム", layout="wide")
 st.markdown("""
 <style>
 /* IN / OUT 見出し専用（ダークモード完全対応） */
-.section-header {
-    background-color: rgba(30, 30, 30, 0.85);
-    color: #F5F5F5 !important;
+.section-header-in {
+    background-color: rgba(30, 60, 100, 0.85); /* Blue-ish */
+    color: #F0F8FF !important;
     padding: 0.6em 0.8em;
     border-radius: 0.6em;
     font-weight: 700;
     font-size: 1.05rem;
     text-align: center;
-    border: 1px solid rgba(255,255,255,0.25);
+    border: 1px solid rgba(135, 206, 250, 0.25);
+}
+
+.section-header-out {
+    background-color: rgba(100, 30, 30, 0.85); /* Red-ish */
+    color: #FFF0F0 !important;
+    padding: 0.6em 0.8em;
+    border-radius: 0.6em;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-align: center;
+    border: 1px solid rgba(250, 128, 114, 0.25);
 }
 
 /* ライトモード補正 */
 @media (prefers-color-scheme: light) {
-    .section-header {
-        background-color: #F1F3F6;
-        color: #111111 !important;
-        border: 1px solid #D0D4DA;
+    .section-header-in {
+        background-color: #E3F2FD;
+        color: #0d47a1 !important;
+        border: 1px solid #BBDEFB;
+    }
+    .section-header-out {
+        background-color: #FFEBEE;
+        color: #b71c1c !important;
+        border: 1px solid #FFCDD2;
     }
 }
 </style>
@@ -394,40 +410,40 @@ if st.session_state.page == "main":
     col_in, col_out = st.columns(2)
 
     with col_in:
-        st.markdown('<p class="section-header">📥 IN (摂取・流入)</p>', unsafe_allow_html=True)
-        oral = st.number_input("経口摂取(mL) ※代謝水除く", 0, 10000, 1500, 50, key="in_oral")
+        st.markdown('<p class="section-header-in">📥 IN (摂取・流入)</p>', unsafe_allow_html=True)
+        oral = st.number_input(":blue[経口摂取(mL)] ※代謝水除く", 0, 10000, 1500, 50, key="in_oral")
         
         # 代謝水計算用カロリー入力
         ck1, ck2 = st.columns([2, 1])
-        kcal = ck1.number_input("摂取エネルギー(kcal) ※代謝水推算用", 0, 5000, 2000, 100, key="in_kcal")
-        meta_coef = ck2.number_input("係数", 0.10, 0.20, 0.13, 0.01, format="%.2f", help="通常 0.12〜0.15", key="in_meta_coef")
+        kcal = ck1.number_input(":blue[摂取エネルギー(kcal)] ※代謝水推算用", 0, 5000, 2000, 100, key="in_kcal")
+        meta_coef = ck2.number_input(":blue[係数]", 0.10, 0.20, 0.13, 0.01, format="%.2f", help="通常 0.12〜0.15", key="in_meta_coef")
         
-        iv = st.number_input("静脈輸液(mL)", 0, 10000, 0, 50, key="in_iv")
-        blood = st.number_input("輸血(mL)", 0, 5000, 0, 50, key="in_blood")
+        iv = st.number_input(":blue[静脈輸液(mL)]", 0, 10000, 0, 50, key="in_iv")
+        blood = st.number_input(":blue[輸血(mL)]", 0, 5000, 0, 50, key="in_blood")
         
         # 代謝水計算
         metabolic = kcal * meta_coef
-        st.info(f"自動計算：代謝水 {metabolic:.0f} mL ({kcal} kcal × {meta_coef})")
+        st.info(f"自動計算：:blue[代謝水] {metabolic:.0f} mL ({kcal} kcal × {meta_coef})")
 
     with col_out:
-        st.markdown('<p class="section-header">📤 OUT (排出・喪失)</p>', unsafe_allow_html=True)
-        u_times = st.number_input("排尿回数", 0, 20, value=u_times_init, key="out_utimes")
+        st.markdown('<p class="section-header-out">📤 OUT (排出・喪失)</p>', unsafe_allow_html=True)
+        u_times = st.number_input(":red[排尿回数]", 0, 20, value=u_times_init, key="out_utimes")
         st.session_state.u_times = u_times
 
         ucol_l, ucol_r = st.columns([3, 2])
         with ucol_l:
-            u_vol = st.number_input("1回尿量(mL)", 0, 1000, value=u_vol_init, key="out_uvol")
+            u_vol = st.number_input(":red[1回尿量(mL)]", 0, 1000, value=u_vol_init, key="out_uvol")
             st.session_state.u_vol = u_vol
         with ucol_r:
             st.markdown("###### ")
             if st.button("📐 尿量推算", use_container_width=True, key="btn_u_calc"):
                 urine_dialog()
 
-        bleeding = st.number_input("出血・ドレーン等(mL)", 0, 5000, 0, key="out_bleed")
+        bleeding = st.number_input(":red[出血・ドレーン等(mL)]", 0, 5000, 0, key="out_bleed")
 
         scol_l, scol_r = st.columns([3, 2])
         with scol_l:
-            s_vol = st.number_input("便重量(g)", 0, 1000, value=s_vol_init, key="out_svol")
+            s_vol = st.number_input(":red[便重量(g)]", 0, 1000, value=s_vol_init, key="out_svol")
             st.session_state.s_vol = s_vol
         with scol_r:
             st.markdown("###### ")
@@ -435,7 +451,7 @@ if st.session_state.page == "main":
                 stool_dialog()
         
         # 入力項目の最後
-        s_type = st.selectbox("便性状", ["普通", "軟便", "下痢"], key="out_stype_main")
+        s_type = st.selectbox(":red[便性状]", ["普通", "軟便", "下痢"], key="out_stype_main")
 
     # =========================================================
     # 【完結】これより下は計算と表示。重複コードはすべて消去してください
