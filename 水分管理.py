@@ -200,8 +200,10 @@ def generate_medical_report(data):
 
     c.setFont("HeiseiMin-W3", 10)
     c.drawString(25 * mm, y, f"・年齢：{data['age']} 歳")
+    c.drawString(70 * mm, y, f"・性別：{data.get('gender', '不明')}")
     y -= 5 * mm
     c.drawString(25 * mm, y, f"・体重：{data['weight']:.1f} kg")
+    c.drawString(70 * mm, y, f"・摂取エネルギー：{data.get('kcal', 0)} kcal")
     y -= 5 * mm
     c.drawString(25 * mm, y, f"・体温：{data['temp']:.1f} ℃")
     y -= 5 * mm
@@ -288,6 +290,28 @@ def generate_medical_report(data):
 
     y -= band_height + 4 * mm
 
+    # 追加：詳細分析（TBW, 損失率）
+    c.setFont("HeiseiMin-W3", 10)
+    tbw_text = f"推算TBW: {data.get('tbw', 0):.0f} mL"
+    loss_text = f"損失率: {data.get('loss_rate', 0):.2f} %"
+    
+    # 損失率による警告
+    loss_rate = data.get('loss_rate', 0)
+    warn_msg = ""
+    if loss_rate >= 3.0:
+        warn_msg = "【危険】熱中症リスク・パフォーマンス著効低下"
+        c.setFillColor(colors.red)
+    elif loss_rate >= 2.0:
+        warn_msg = "【注意】運動パフォーマンス低下の懸念"
+        c.setFillColor(colors.orange)
+    else:
+        c.setFillColor(colors.black)
+
+    c.drawString(25 * mm, y, f"{tbw_text}   /   {loss_text}   {warn_msg}")
+    c.setFillColor(colors.black) # 色を戻す
+    
+    y -= 6 * mm
+
     c.setFont("HeiseiMin-W3", 11)
     c.drawString(25 * mm, y, f"評価： {data['judgment']}")
 
@@ -372,10 +396,18 @@ if st.session_state.page == "main":
     with col_in:
         st.markdown('<p class="section-header">📥 IN (摂取・流入)</p>', unsafe_allow_html=True)
         oral = st.number_input("経口摂取(mL) ※代謝水除く", 0, 10000, 1500, 50, key="in_oral")
+        
+        # 代謝水計算用カロリー入力
+        ck1, ck2 = st.columns([2, 1])
+        kcal = ck1.number_input("摂取エネルギー(kcal)", 0, 5000, 2000, 100, key="in_kcal")
+        meta_coef = ck2.number_input("係数", 0.10, 0.20, 0.13, 0.01, format="%.2f", help="通常 0.12〜0.15", key="in_meta_coef")
+        
         iv = st.number_input("静脈輸液(mL)", 0, 10000, 0, 50, key="in_iv")
         blood = st.number_input("輸血(mL)", 0, 5000, 0, 50, key="in_blood")
-        metabolic = 5.0 * weight
-        st.info(f"自動計算：代謝水 {metabolic:.0f} mL")
+        
+        # 代謝水計算
+        metabolic = kcal * meta_coef
+        st.info(f"自動計算：代謝水 {metabolic:.0f} mL ({kcal} kcal × {meta_coef})")
 
     with col_out:
         st.markdown('<p class="section-header">📤 OUT (排出・喪失)</p>', unsafe_allow_html=True)
@@ -487,10 +519,12 @@ if st.session_state.page == "main":
     st.markdown("---")
     if st.button("📄 PDFレポートを生成・保存", use_container_width=True, key="btn_final_unified"):
         report_data = {
-            "age": age, "weight": weight, "temp": temp, "room_temp": r_temp,
+            "age": age, "gender": gender, "weight": weight, "temp": temp, "room_temp": r_temp,
+            "kcal": kcal,
             "oral": oral, "iv": iv, "blood": blood, "metabolic": metabolic,
             "urine": urine_total, "bleeding": bleeding, "stool": stool_total,
             "insensible": insensible_total, "net": net_balance, "judgment": judg,
+            "tbw": tbw_val, "loss_rate": loss_rate,
             "recorder": recorder
         }
         pdf_buf = generate_medical_report(report_data)
