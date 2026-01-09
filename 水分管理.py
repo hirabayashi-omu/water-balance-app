@@ -607,9 +607,9 @@ elif st.session_state.page == "theory":
     
     st.markdown("##### ① 代謝水 (Metabolic Water)")
     st.write("栄養素が体内で燃焼（酸化）される際に生成される水分です。")
-    st.latex(r"\text{算出式: } 5\,\text{mL} \times \text{体重(kg)}")
+    st.latex(r"\text{算出式: } \text{摂取エネルギー(kcal)} \times 0.12 \sim 0.15")
     st.caption(
-        "根拠: 通常、成人では1日あたり約200〜300mL（約5mL/kg）程度とされています。"
+        "根拠: 一般的に摂取エネルギー 1kcal あたり 0.12mL 〜 0.15mL の代謝水が生成されると推定されています。"
     )
 
     st.markdown("##### ② 不感蒸泄 (Insensible Water Loss)")
